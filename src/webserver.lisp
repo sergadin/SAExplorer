@@ -149,5 +149,5 @@ for the PATH specified."
          (keywords (cdr (assoc "keywords" message :test #'string-equal))))
     (log-message :info "~A" message)
     (log-message :info "~A" keywords)
-    (explorer::find-conferneces (list keywords)))
+    (confs:impact keywords))
   (broadcast tp "~a says ~a" (name user) message-text))
