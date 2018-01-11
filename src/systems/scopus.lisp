@@ -62,7 +62,7 @@
 
 (defmethod rest-query-headers ((system <scopus>) query &key format facets)
   (declare (ignore system format facets))
-  `(("X-ELS-APIKey" . ,(bibsys::config-option system "api-key"))
+  `(("X-ELS-APIKey" . ,(bibsys:config-option system "api-key"))
     ("X-ELS-ResourceVersion" . "XOCS")))
 
 
@@ -80,10 +80,17 @@
   entry-json)
 
 (defun ensure-multiple-categories (category-data)
+  "Facet data format differes for single-item and multiple items
+categories. Single-item facets are represented as
+ (:category (:name . ...) (:value ...) ...),  while normal facets are
+ (:category ((:name . ...) ...) (...)).
+
+This function convers category-data to the multi-items form.
+"
   (when category-data
-    (if (consp (first category-data))
-        (list category-data)
-        category-data)))
+    (if (and (consp (first category-data)) (consp (caar category-data)))
+        category-data
+        (list category-data))))
 
 
 (defmethod bibsys:parse-response ((system <scopus>) content (format (eql :json)) &key result-object)
@@ -96,7 +103,7 @@
          (result (or result-object (make-instance '<scopus-result> :total-results total-results))))
     ;; Assign facet data
     (when (or (not (slot-boundp result 'bibsys:facets))
-              (not (bibsys:facets result)))
+              (null (bibsys:facets result)))
       (loop :for name-attribute-category :in facets
          :for name = (cdr (assoc :name name-attribute-category))
          :and category = (ensure-multiple-categories (rest (assoc :category name-attribute-category)))
@@ -104,7 +111,7 @@
          :do
          (setf (bibsys:items facet)
                (mapcar (lambda (category-data)
-                         (mapcar (lambda (key) (cdr (assoc key category-data)))
+                         (mapcan (lambda (key) (list key (cdr (assoc key category-data))))
                                  '(:name :value :hit-count)))
                         category))
          (push facet (bibsys:facets result))))

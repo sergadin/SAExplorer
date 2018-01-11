@@ -42,14 +42,15 @@
   :author "serg@msu.ru"
   :depends-on ("cl-log"
                "cl-containers"
-               "cl-utilities" "alexandria" "cl-singleton-mixin"
+               "cl-utilities" "alexandria" "rutils" "cl-singleton-mixin"
                "optima" ; pattern matching
                "drakma" "do-urlencode" "html-entities"
-               "cl-json" "closure-html" "cxml" "cxml-stp" "xuriella" ; data formats
+               "cl-json" "cxml" "cxml-stp" "xuriella" ; data formats
                "cl-dbi" "dbd-sqlite3" "md5" ; database access
                "bordeaux-threads" "usocket" "hunchentoot" "clack" "quri" ; web server
                "hunchensocket" "websocket-driver"; websockets
                "fare-memoization" "cl-redis" ; caching
+               ; "closure-html"
                "py-configparser")
   :pathname "src"
   :serial t

@@ -22,28 +22,26 @@
 
 ;;
 ;; number of papers, publication size,
-;; authors Hirsh, topic consistancy, citations, articles in journals
+;; authors Hirsh, topic consistency, citations, articles in journals
 ;;
 
 (defun impact (conference-name)
-  (let ((results (query (find-system "Scopus")
+  (let ((result (query (find-system "Scopus")
                         (format nil "REFSRCTITLE(~A) AND DOCTYPE(ar) AND SRCTYPE(j)"
                                 (proximity conference-name))
                         :format :json
                         :max-results 80)))
-    (dolist (entry (bibsys:entries results))
+    (dolist (entry (bibsys:entries result))
       (format t "~A, ~A~%"
               ;;(scopus::get-json-item entry '(:dc\:identifier))
               (scopus::get-json-item entry '(:prism\:issn))
               (scopus::get-json-item entry '(:prism\:publication-name))))
-    #+(or)(loop :for facet-object = (bibsys:facets results)
-       :for facet = (bibsys:items facet-object)
+    (loop :for facet :in (bibsys:facets result)
        :do
-       (format t "~A~%" (scopus::get-json-item facet '(:name)))
-       (when (string-equal (scopus::get-json-item facet '(:name)) "exactsrctitle")
-         (format t "~A~%" (scopus::get-json-item facet '(:category)))))
+       (format t "~A~%" (bibsys::name facet))
+       (when (string-equal (bibsys::name facet) "exactsrctitle")
+         (format t "~A~%" (bibsys::items facet))))
     t
-    ;;(print (last (scopus->entries scopus-results)))
     ))
 
 

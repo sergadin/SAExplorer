@@ -12,7 +12,7 @@
   (:import-from :cl-log
                 #:log-message)
   (:export #:<bibliography-system> #:<query> #:<result> #:<facet>
-           #:entries #:items #:facets
+           #:entries #:items #:facets #:config-option
            #:rest-accept-encoding #:parse-response
            #:define-bibsystem
            #:retrieve
@@ -135,6 +135,10 @@ section.")
   for facet by country its content is a mapping from
   countryid/countryname into number of documents related to this
   country and matched by the query."))
+
+(defmethod (setf items) :before (new-value (facet <facet>))
+  "Verify that NEW-VALUE of FACET's content is a plist."
+  (mapc #'(lambda (item) (assert (rutils:plistp item))) new-value))
 
 
 (defclass <result> ()
