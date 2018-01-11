@@ -35,12 +35,12 @@ script:
              -s cl-coveralls
              -e '(coveralls:with-coveralls (:exclude "test")
                        (push (pathname "~/sergadin/SAExplorer/") asdf:*central-registry*)
-                       (ql:quickload "secsrv-test")
+                       (ql:quickload "saexplorer-test")
                        (lift:describe-test-result (lift:run-tests :suite :root) t))';
     else
          ros -s lift
              -e '(progn
               (push (pathname "~/sergadin/SAExplorer/") asdf:*central-registry*)
-              (ql:quickload "secsrv-test")
+              (ql:quickload "saexplorer-test")
               (lift:describe-test-result (lift:run-tests :suite :root) t))';
     fi
