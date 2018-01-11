@@ -138,7 +138,10 @@ section.")
 
 (defmethod (setf items) :before (new-value (facet <facet>))
   "Verify that NEW-VALUE of FACET's content is a plist."
-  (mapc #'(lambda (item) (assert (rutils:plistp item))) new-value))
+  (mapc #'(lambda (item)
+            (assert (rutils:plistp item) (item)
+                    "Invalid facet items structure; plist expected: ~S" item))
+        new-value))
 
 
 (defclass <result> ()
