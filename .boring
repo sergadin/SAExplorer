@@ -1,0 +1,8 @@
+# Boring file regexps:
+\#
+~$
+\.dfsl$
+\.ppcf$
+\.fasl$
+\.x86f$
+\.fas$

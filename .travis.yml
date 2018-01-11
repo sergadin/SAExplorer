@@ -1,0 +1,46 @@
+language: common-lisp
+sudo: false
+
+env:
+  global:
+    - PATH=~/.roswell/bin:$PATH
+    - ROSWELL_INSTALL_DIR=$HOME/.roswell
+  matrix:
+    - LISP=sbcl-bin COVERALLS=true
+    - LISP=ccl-bin
+
+matrix:
+  allow_failures:
+    - env: LISP=sbcl-bin
+
+install:
+  # Install roswell
+  - curl -L https://raw.githubusercontent.com/snmsts/roswell/release/scripts/install-for-ci.sh | sh
+
+  # Coveralls support
+  - git clone https://github.com/fukamachi/cl-coveralls ~/lisp/cl-coveralls
+
+  # Coveralls support
+  - git clone https://github.com/sergadin/dbd-oracle ~/lisp/dbd-oracle
+
+  - ros -e '(ql:quickload "lift")'
+
+cache:
+  directories:
+    - $HOME/.roswell
+
+script:
+  - if [ "$COVERALLS" ]; then
+         ros -s lift
+             -s cl-coveralls
+             -e '(coveralls:with-coveralls (:exclude "test")
+                       (push (pathname "~/sergadin/SAExplorer/") asdf:*central-registry*)
+                       (ql:quickload "secsrv-test")
+                       (lift:describe-test-result (lift:run-tests :suite :root) t))';
+    else
+         ros -s lift
+             -e '(progn
+              (push (pathname "~/sergadin/SAExplorer/") asdf:*central-registry*)
+              (ql:quickload "secsrv-test")
+              (lift:describe-test-result (lift:run-tests :suite :root) t))';
+    fi
