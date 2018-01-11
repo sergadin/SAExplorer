@@ -8,7 +8,7 @@
 (asdf:defsystem :saexplorer-test
   :description "Tests for SAExplorer"
   :author "serg@msu.ru"
-  :depends-on ("secsrv" "lift")
+  :depends-on ("saexplorer" "lift")
   :pathname "test"
   :serial t
   :components
