@@ -8,7 +8,7 @@
   (:import-from :saexplorer
                 #:split-keywords)
   (:import-from :saexplorer.scopus
-                #:query-scopus #:proximity)
+                #:proximity)
   (:export #:explore))
 
 
