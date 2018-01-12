@@ -112,3 +112,5 @@ the result could be
   (loop :for facet-item :in (top-authors conference-name)
      :for author-name = (getf facet-item :name)
      :and author-id = (getf facet-item :value)
+     :nconcing (mapcar #'generalize-name
+                       (author-conferences author-name :author-id author-id))))
