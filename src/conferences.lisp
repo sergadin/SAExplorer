@@ -19,6 +19,52 @@
 (in-package :saexplorer.conferences)
 
 
+(defun articles-per-year (conference-name)
+  (let ((result (query (find-system "Scopus")
+                       (format nil "CONFNAME(~A)" (proximity conference-name))
+                       :format :json
+                       :max-results 20)))
+    (format t "~{~A~^~%~}~%" (bibsys:facet-items (bibsys:get-facet result "pubyear")))))
+
+(defun top-authors (conference-name &optional years)
+  (let ((result (query (find-system "Scopus")
+                       (format nil "CONFNAME(~A) ~@[AND PUBYEAR(~A)~]"
+                               (proximity conference-name)
+                               years)
+                       :format :json
+                       :max-results 20)))
+    (let ((top-authors (remove-if #'null
+                                  (bibsys:facet-items (bibsys:get-facet result "authname"))
+                                  :key #'(lambda (facet-item) (getf facet-item :value)))))
+      (format t "~{~A~^~%~}~%" top-authors)
+      top-authors)))
+
+(defun author-conferences (author-name &key author-id)
+  (log-message :info "Searching conferences for `~A' (au-id: ~A)" author-name author-id)
+  (let* ((search-field (if author-id "AU-ID" "AUTHOR-NAME"))
+         (search-term (or author-id author-name))
+         (result (query (find-system "Scopus")
+                        (format nil "~A(~A) AND SRCTYPE(p) AND (PUBYEAR AFT 2000)"
+                                search-field search-term)
+                        :format :json
+                        :max-results 80)))
+    (when result
+      (let ((conf-names (mapcar #'(lambda (x) (getf x :name))
+                                (bibsys:facet-items (bibsys:get-facet result "exactsrctitle")))))
+        ;;(format t "~{~A~^~%~}~%" conf-names)
+        conf-names))))
+
+
+(defun generalize-name (proceedings-title)
+  "Extract generic conference name and abbreviation from its proceedings title.
+
+For example, given a title
+'Descriptional Complexity Of Formal Systems 10th International Workshop Dcfs 2008'
+the result could be
+'Descriptional Complexity Of Formal Systems' and 'Dcfs'.
+"
+  proceedings-title)
+
 
 ;;
 ;; number of papers, publication size,
@@ -40,7 +86,9 @@
        :do
        (format t "~A~%" (bibsys::name facet))
        (when (string-equal (bibsys::name facet) "exactsrctitle")
-         (format t "~A~%" (bibsys::items facet))))
+         (format t "~A~%" (bibsys:facet-items facet))))
+    (articles-per-year conference-name)
+    (top-authors conference-name)
     t
     ))
 
@@ -58,3 +106,9 @@
       (format t "~A~%" (scopus::get-json-item entry '(:prism\:publication-name)))
       ;;(format t "~{~A~^, ~}~%" (split-keywords (scopus::get-json-item entry '(:authkeywords))))
       #+(or)(format t "~A~%" (scopus::get-json-item entry '(:prism\:cover-date))))))
+
+(defun similar (conference-name)
+  "Return list of conferences that are similar to the given one."
+  (loop :for facet-item :in (top-authors conference-name)
+     :for author-name = (getf facet-item :name)
+     :and author-id = (getf facet-item :value)

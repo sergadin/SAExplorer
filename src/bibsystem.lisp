@@ -12,7 +12,8 @@
   (:import-from :cl-log
                 #:log-message)
   (:export #:<bibliography-system> #:<query> #:<result> #:<facet>
-           #:entries #:items #:facets #:config-option
+           #:entries #:facet-items #:facets #:config-option
+           #:get-facet
            #:rest-accept-encoding #:parse-response
            #:define-bibsystem
            #:retrieve
@@ -128,7 +129,7 @@ section.")
   ((name :type string :accessor name :initarg :name
          :documentation "Name of the facet. This could be the name of
          an attribute appeared in objects returned by the search query.")
-   (items :accessor items :initarg :items :initform nil
+   (items :accessor facet-items :initarg :items :initform nil
           :documentation "List of (:name name :value value :count count) triplets."))
   (:documentation "Facet description of a search query. Each facet is
   identified by its name and contains value/name/count triplets, e.g.,
@@ -136,7 +137,7 @@ section.")
   countryid/countryname into number of documents related to this
   country and matched by the query."))
 
-(defmethod (setf items) :before (new-value (facet <facet>))
+(defmethod (setf facet-items) :before (new-value (facet <facet>))
   "Verify that NEW-VALUE of FACET's content is a plist."
   (mapc #'(lambda (item)
             (assert (rutils:plistp item) (item)
@@ -246,6 +247,15 @@ be updated.
   (:documentation "Retrieve from the SYSTEM all data specified by
   FIELDS about object identified by DOCUMENT-ID."))
 
+(defgeneric get-facet (result facet-name &key default)
+  (:documentation "Find a facet by name.")
+  (:method ((result <result>) (facet-name string) &key (default nil default-bound-p))
+    (let ((facet (find facet-name (facets result) :key #'name :test #'string-equal)))
+      (if (or facet (not (null default-bound-p)))
+          (or facet default)
+          (error "Facet `~A' NOT FOUND in `~A'." facet-name result)))))
+
+
 ;;;
 ;;; Methods
 ;;;
@@ -277,6 +287,14 @@ searching FORMAT in a plist of `accept-encoding' slot, if bound."
     (error "Endpoints are not defined for system `~A'" (system-name system)))
   (optima:ematch (list operation datatype format) (slot-value system 'endpoints)))
 
+
+;;; Pretty printing
+
+(defmethod print-object ((result <result>) out)
+  (print-unreadable-object (result out :type t)
+    (format out "~s out of ~s results." (length (entries result)) (total-results result))))
+
+;;; Querying bibsystem
 
 (defun signature (query &rest args)
   "Compute MD5 hash signature of the QUERY, a system-specific string,
@@ -315,9 +333,9 @@ name, or encoding format."
                                      :method :get
                                      :external-format-in :utf-8
                                      :external-format-out :utf-8
-                                     ;; :url-encoder #'(lambda (s f)
-                                     ;;                 (declare (ignore f))
-                                     ;;                 (saexplorer::url-encode s :utf-8))
+                                     :url-encoder #'(lambda (s f)
+                                                      (declare (ignore f))
+                                                      (saexplorer::url-encode s :utf-8))
                                      :proxy
                                      (when (getf (proxy-data system) :host)
                                        (list (getf (proxy-data system) :host)
@@ -337,9 +355,13 @@ name, or encoding format."
                     ;; Some systems do not encode messages properly?
                     (declare (ignore e))
                     content)))))
-        ;;--- should be: (parse-response result chunk-content format)
-        (setf result (parse-response system chunk-content format :result-object result))
-        ;; extract total results
-        (unless total-results
-          (setf total-results (total-results result)))))
+        (if (or (not chunk-content) (string-equal chunk-content "NIL"))
+          (setf request-failed t)
+          (progn
+            ;;--- should be: (parse-response result chunk-content format)
+            (setf result (parse-response system chunk-content format :result-object result))
+            ;; extract total results
+            (unless total-results
+              (setf total-results (total-results result))))))
+      #+(or)(red:del (signature query (system-name system) format start chunk-size)))
     result))

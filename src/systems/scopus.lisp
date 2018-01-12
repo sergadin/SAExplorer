@@ -5,6 +5,7 @@
 (defpackage saexplorer.scopus
   (:nicknames :scopus)
   (:use :cl :saexplorer.bibsystem)
+  (:import-from :split-sequence #:split-sequence)
   (:import-from :cl-log
                 #:log-message)
   (:import-from :saexplorer
@@ -22,8 +23,6 @@
   '("exactsrctitle" "au-id" "authname" "pubyear" "subjarea" "language" "af-id" "exactkeyword" "srctype" "country" "aucite")
   "List of facets numbers provided by Scopus.")
 
-
-(alexandria:define-constant +http-ok+ 200 :test #'=)
 
 (define-bibsystem ("Scopus")
     :accept-encodings '(:json "application/json"
@@ -66,8 +65,9 @@
     ("X-ELS-ResourceVersion" . "XOCS")))
 
 
+;;;
 ;;; Parse response
-
+;;;
 
 (defun get-json-item (json keys-path)
   "Extract value of an item specified by a sequence of json keys."
@@ -92,6 +92,18 @@ This function convers category-data to the multi-items form.
         category-data
         (list category-data))))
 
+(defun polish-facet-items (facet-name extracted-data)
+  "Perform post-processing on facet data extracted from Scopus
+response. For example, Scopus encodes authorId inside the name field
+of by-author facet using # delimiter."
+  (alexandria:switch (facet-name :test #'string-equal)
+    ("authname" (mapcar (lambda (item)
+                          (destructuring-bind (name . id)
+                              (split-sequence #\# (getf item :name))
+                            `(:name ,name :value ,(first id) :hit-count ,(getf item :hit-count))))
+                        extracted-data))
+    (t extracted-data)))
+
 
 (defmethod bibsys:parse-response ((system <scopus>) content (format (eql :json)) &key result-object)
   "Parse JSON document returned by Scopus search engine."
@@ -109,11 +121,13 @@ This function convers category-data to the multi-items form.
          :and category = (ensure-multiple-categories (rest (assoc :category name-attribute-category)))
          :for facet = (make-instance 'bibsys:<facet> :name name)
          :do
-         (setf (bibsys:items facet)
-               (mapcar (lambda (category-data)
-                         (mapcan (lambda (key) (list key (cdr (assoc key category-data))))
-                                 '(:name :value :hit-count)))
-                        category))
+         (setf (bibsys:facet-items facet)
+               (polish-facet-items
+                name
+                (mapcar (lambda (category-data)
+                          (mapcan (lambda (key) (list key (cdr (assoc key category-data))))
+                                  '(:name :value :hit-count)))
+                        category)))
          (push facet (bibsys:facets result))))
     ;; Extend matched entries
     (setf (bibsys:entries result) (append (bibsys:entries result)
@@ -131,16 +145,6 @@ This function convers category-data to the multi-items form.
     result))
 
 
-
-
-(defun request-signature (query format start chunk-size)
-  "Compute hash signature of a request to Scopus."
-  (flet ((normalize (query)
-           (string-upcase query))
-         (to-hex (md5-digest)
-           (format nil "~(~{~2,'0X~}~)"
-                   (map 'list #'identity md5-digest))))
-    (to-hex (md5:md5sum-string (format nil "~A:~A:~A:~A" (normalize query) format start chunk-size)))))
 
 
 ;; ;; (query-scopus "af-id(60007457) OR af-id(60073864) OR af-id(60075950) OR af-id(60068672)")
