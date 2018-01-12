@@ -123,7 +123,8 @@ for the PATH specified."
   (:default-initargs :client-class 'user))
 
 (defclass user (hunchensocket:websocket-client)
-  ((name :initarg :user-agent :reader name :initform (error "Name this user!"))))
+  ((name :initarg :user-agent :reader name :initform (error "Name this user!"))
+   (state :initform nil :accessor user-state)))
 
 (defvar *exploreres* (list (make-instance 'explorer :name "/")))
 
@@ -138,6 +139,7 @@ for the PATH specified."
         do (hunchensocket:send-text-message peer (apply #'format nil message args))))
 
 (defmethod hunchensocket:client-connected ((tp explorer) user)
+  (setf (user-state user) :initial)
   #+(or)(broadcast tp "~a has joined ~a" (name user) (name tp)))
 
 (defmethod hunchensocket:client-disconnected ((tp explorer) user)
@@ -152,12 +154,34 @@ for the PATH specified."
 
 (defmethod hunchensocket:text-message-received ((tp explorer) user message-text)
   (log-message :info "Message recieved: '~A'." message-text)
-  (let* ((message (decode-json-from-string message-text))
-         (keywords (cdr (assoc "keywords" message :test #'string-equal))))
-    (log-message :info "~A" message)
-    (log-message :info "~A" keywords)
-    ;;(confs:impact keywords)
-    )
-  (sample-progress-bar (first (hunchensocket:clients tp)))
-  ;;(wsapp:update-session (first (hunchensocket:clients tp)) :progress 0.4d0)
-  (broadcast tp "~a says ~a" (name user) message-text))
+  (let* ((message (decode-json-from-string message-text)))
+    (case (user-state user)
+      (:initial
+       (let* ((keywords (cdr (assoc "keywords" message :test #'string-equal)))
+              (response (confs:find-relevant keywords)))
+         (log-message :info "Keywords: ~A" keywords)
+         (log-message :info "Sending to client: '~A'." response)
+         (hunchensocket:send-text-message
+          user
+          (json:encode-json-to-string `((:relevant-conferences . ,response))))
+         (log-message :info "Sent to client: '~A'." response)
+         (setf (user-state user) :select-conference)))
+      (:select-conference
+       (let* ((conference-name (cdr (assoc "confname" message :test #'string-equal)))
+              (response (confs:similar conference-name)))
+         (hunchensocket:send-text-message
+          user
+          (json:encode-json-to-string `((:similar-conferences . ,response))))
+         (log-message :info "Sent to client: '~A'." response)
+         (setf (user-state user) :request-impact)))
+      (:request-impact
+       (let* ((conference-name (cdr (assoc "confname" message :test #'string-equal)))
+              (response (confs:impact conference-name)))
+         (hunchensocket:send-text-message
+          user
+          (json:encode-json-to-string `((:similar-conferences . ,response))))
+         (log-message :info "Sent to client: '~A'." response))))
+    ;; (sample-progress-bar user)
+    ))
+
+;;(broadcast tp "~a says ~a" (name user) message-text))

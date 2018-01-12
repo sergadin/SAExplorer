@@ -14,7 +14,8 @@
   (:import-from :saexplorer.scopus
                 #:proximity)
   (:export #:impact
-           #:find-relevant))
+           #:find-relevant
+           #:similar))
 
 (in-package :saexplorer.conferences)
 
@@ -94,18 +95,17 @@ the result could be
 
 
 (defun find-relevant (keywords)
-  (let* ((q-str (format nil "~{~A~^ AND ~}"
-                        (list (format nil "(AUTHKEY(~{~A~^ OR ~}) OR KEY(~{~A~^ OR ~}))" keywords keywords)
-                              "SRCTYPE(p)")))
-         (entries (mapcan #'(lambda (chunk-content)
-                              (scopus::get-json-item (cl-json:decode-json-from-string chunk-content)
-                                                     '(:search-results :entry)))
-                         (scopus::query-scopus (print q-str) :max-results 1000))))
-    (print (scopus->facets entries))
-    (dolist (entry entries)
-      (format t "~A~%" (scopus::get-json-item entry '(:prism\:publication-name)))
-      ;;(format t "~{~A~^, ~}~%" (split-keywords (scopus::get-json-item entry '(:authkeywords))))
-      #+(or)(format t "~A~%" (scopus::get-json-item entry '(:prism\:cover-date))))))
+  "Return a list of conferences related to specified KEYWORDS."
+  (let ((result (query (find-system "Scopus")
+                        (format nil "~{KEY(~A)~^ AND ~} AND SRCTYPE(p)"
+                                (split-keywords keywords :delimiter #\,))
+                        :format :json
+                        :max-results 80)))
+    (loop :for facet :in (bibsys:facets result)
+       :when (string-equal (bibsys::name facet) "exactsrctitle")
+       :nconcing
+       (mapcar #'(lambda (x) (getf x :name)) (bibsys:facet-items facet)))))
+
 
 (defun similar (conference-name)
   "Return list of conferences that are similar to the given one."
