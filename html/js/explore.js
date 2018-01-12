@@ -1,5 +1,6 @@
-$(function() {
+"use strict";
 
+$(function() {
     var ractive = Ractive({
         target: '#target',
         template: '#template',
@@ -9,55 +10,29 @@ $(function() {
             ws_status: 'disconnected',
             key: 'value',
             progress_current_stage: 20,
+            conferences: [],
         }
-    })
+    });
 
-    var wsUri = "ws://localhost:12345/";
-    var output;
-    var websocket;
+    const wsUri = "ws://localhost:12345/";
 
-    function init()
+    var websocket = new WebSocket(wsUri);
+    var output = document.getElementById("output");
+
+    websocket.onopen = evt => writeToScreen("CONNECTED");
+    websocket.onclose = evt => writeToScreen("DISCONNECTED");
+    websocket.onmessage = processMessage;
+    websocket.onerror = evt => writeToScreen('<span style="color: red;">ERROR:</span> ' + evt.data);
+
+    function processMessage(evt)
     {
-        output = document.getElementById("output");
-        testWebSocket();
-    }
-
-    function testWebSocket()
-    {
-        websocket = new WebSocket(wsUri);
-        websocket.onopen = function(evt) { onOpen(evt) };
-        websocket.onclose = function(evt) { onClose(evt) };
-        websocket.onmessage = function(evt) { onMessage(evt) };
-        websocket.onerror = function(evt) { onError(evt) };
-        return websocket;
-    }
-
-    function onOpen(evt)
-    {
-        writeToScreen("CONNECTED");
-        //doSend("WebSocket rocks");
-    }
-
-    function onClose(evt)
-    {
-        writeToScreen("DISCONNECTED");
-    }
-
-    function onMessage(evt)
-    {
-        writeToScreen('<span style="color: blue;">RESPONSE: ' + evt.data+'</span>');
-        websocket.close();
-    }
-
-    function onError(evt)
-    {
-        writeToScreen('<span style="color: red;">ERROR:</span> ' + evt.data);
-    }
-
-    function doSend(message)
-    {
-        writeToScreen("SENT: " + message);
-        websocket.send(JSON.stringify({'message': message}));
+        let data = JSON.parse(evt.data);
+        if (data.hasOwnProperty("progress")) {
+            ractive.set("progress_current_stage", data.progress * 100);
+        } else if (data.hasOwnProperty("relevantConferences")) {
+            ractive.set("conferences", data.relevantConferences.map(name => ({name: name})));
+        }
+        writeToScreen('<span style="color: blue;">RESPONSE: ' + evt.data + '</span>');
     }
 
     function writeToScreen(message)
@@ -68,10 +43,6 @@ $(function() {
         output.appendChild(pre);
     }
 
-    window.addEventListener("load", init, false);
-
-
-
     if( typeof(WebSocket) != "function" ) {
         $('body').html("<h1>Error</h1><p>Your browser does not support HTML5 Web Sockets. Try Google Chrome instead.</p>");
     }
@@ -81,9 +52,16 @@ $(function() {
         var keywords_inp = $(this).closest('.input-group').find('#keywords')
         var keywords = keywords_inp.val()
 
-        //var ws = testWebSocket()
-        websocket.send(JSON.stringify({'keywords': keywords}))
-        //ws.close();
+        websocket.send(JSON.stringify({'keywords': keywords}));
     });
 
+    function conferenceItemClicked(event) {
+        let conferenceName = $(event.node).data("conference-name");
+        $(event.node).addClass("active");
+        websocket.send(JSON.stringify({'confname': conferenceName}));
+    }
+
+    ractive.on({
+        itemClicked: conferenceItemClicked,
+    });
 });

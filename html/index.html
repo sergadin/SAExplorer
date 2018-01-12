@@ -71,8 +71,14 @@
          Use this document as a way to quickly start any new project. All you get is this text and a mostly barebones HTML document.
        </p>
 
-       <div class="progress" style="height: 20px;">
+       <div class="progress" style="height: 20px; margin-bottom: 20px;">
          <div class="progress-bar" role="progressbar" style="width: {{ progress_current_stage }}%" aria-valuenow="{{ progress_current_stage }}" aria-valuemin="0" aria-valuemax="100"></div>
+       </div>
+
+       <div class="list-group">
+       {{#each conferences}}
+       <a href="#" on-click="itemClicked" data-conference-name="{{name}}" class="conference-item list-group-item list-group-item-action">{{name}}</a>
+       {{/each}}
        </div>
 
        <div id="output"></div>
