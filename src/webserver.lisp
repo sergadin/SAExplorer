@@ -163,7 +163,7 @@ for the PATH specified."
          (log-message :info "Sending to client: '~A'." response)
          (hunchensocket:send-text-message
           user
-          (json:encode-json-to-string `((:relevant-conferences . ,response))))
+          (json:encode-json-alist-to-string `((:relevant-conferences . ,response))))
          (log-message :info "Sent to client: '~A'." response)
          (setf (user-state user) :select-conference)))
       (:select-conference
@@ -171,7 +171,7 @@ for the PATH specified."
               (response (confs:similar conference-name)))
          (hunchensocket:send-text-message
           user
-          (json:encode-json-to-string `((:similar-conferences . ,response))))
+          (json:encode-json-alist-to-string `((:similar-conferences . ,response))))
          (log-message :info "Sent to client: '~A'." response)
          (setf (user-state user) :request-impact)))
       (:request-impact
@@ -179,7 +179,7 @@ for the PATH specified."
               (response (confs:impact conference-name)))
          (hunchensocket:send-text-message
           user
-          (json:encode-json-to-string `((:similar-conferences . ,response))))
+          (json:encode-json-alist-to-string `((:similar-conferences . ,response))))
          (log-message :info "Sent to client: '~A'." response))))
     ;; (sample-progress-bar user)
     ))
