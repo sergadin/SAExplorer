@@ -78,6 +78,7 @@
                (:file "conferences")
                (:file "explorer")
                (:file "webserver") ; web server starter and tools
+               (:file "wsapp")
                ;; top-level function that starts everything
                (:file "main"))
   :in-order-to ((test-op (load-op saexplorer-test)))
