@@ -163,7 +163,7 @@ command into emacs dot-file `~/.emacs`.
 
 If everythong was configured proprly, you can start Emacs editor and
 run SLIME by entering Emacs command `M-x slime <RET>` (Alt+X slime
-<Enter>).
+Enter).
 
 The folowing descriptions of basic SLIME/Emacs commands might be useful:
 
@@ -174,4 +174,13 @@ The folowing descriptions of basic SLIME/Emacs commands might be useful:
 How to run tests
 ----------------
 
+```lisp
+(ql:quickload "saexplorer-test")
+(lift:run-tests :suite 'root :break-on-errors? t)
+```
+
+Or, using the ASDF testing facility
+
+```lisp
 (asdf:operate 'asdf:test-op :saexplorer)
+```

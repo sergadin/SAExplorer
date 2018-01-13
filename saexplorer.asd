@@ -64,6 +64,7 @@
                          (:file "parsing")
                          (:file "json")
                          (:file "cache")
+                         (:file "sequences")
                          (:file "keywords")))
                (:file "bibsystem")
                (:file "query")

@@ -12,4 +12,5 @@
   :pathname "test"
   :serial t
   :components
-  ((:file "package")))
+  ((:file "package")
+   (:file "conference-names")))
