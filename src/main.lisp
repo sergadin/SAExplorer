@@ -30,6 +30,7 @@
 
 (defun main ()
   (setup-logging)
+  (redis:connect)
   (log-message :info "Starting")
   (load-config #p"local.cfg")
   (log-message :info "Using cache database ~A" (get-option saexplorer.sys::*config* "Cache" "type"))

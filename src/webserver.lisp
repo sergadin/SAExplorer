@@ -119,20 +119,28 @@ for the PATH specified."
 
 
 (defclass explorer (hunchensocket:websocket-resource)
-  ((name :initarg :name :initform (error "Name this room!") :reader name))
+  ((name :initarg :name :initform (error "Name this resource!") :reader name))
   (:default-initargs :client-class 'user))
 
 (defclass user (hunchensocket:websocket-client)
   ((name :initarg :user-agent :reader name :initform (error "Name this user!"))
    (state :initform nil :accessor user-state)))
 
-(defvar *exploreres* (list (make-instance 'explorer :name "/")))
+(defgeneric handle-request (resource ws-request user)
+  (:documentation "Process USER's request WS-REQUEST to the RESOURCE."))
 
-(defun find-explorer (request)
+
+
+(defvar *ws-resources* (list (make-instance 'explorer :name "/")))
+
+(defun find-ws-resource (request)
   (log-message :info "Connection to WS resource ~A" (hunchentoot:script-name request))
-  (find (hunchentoot:script-name request) *exploreres* :test #'string= :key #'name))
+  (find (hunchentoot:script-name request) *ws-resources* :test #'string= :key #'name))
 
-(pushnew 'find-explorer hunchensocket:*websocket-dispatch-table*)
+(defun add-ws-resource (resource)
+  (push resource *ws-resources*))
+
+(pushnew 'find-ws-resource hunchensocket:*websocket-dispatch-table*)
 
 (defun broadcast (process message &rest args)
   (loop for peer in (hunchensocket:clients process)
@@ -152,36 +160,36 @@ for the PATH specified."
     (hunchensocket:send-text-message client (json:encode-json-to-string `((:progress . ,p))))
     (sleep (random 1.0d0))))
 
-(defmethod hunchensocket:text-message-received ((tp explorer) user message-text)
-  (log-message :info "Message recieved: '~A'." message-text)
-  (let* ((message (decode-json-from-string message-text)))
-    (case (user-state user)
-      (:initial
-       (let* ((keywords (cdr (assoc "keywords" message :test #'string-equal)))
-              (response (confs:find-relevant keywords)))
-         (log-message :info "Keywords: ~A" keywords)
-         (log-message :info "Sending to client: '~A'." response)
-         (hunchensocket:send-text-message
-          user
-          (json:encode-json-alist-to-string `((:relevant-conferences . ,response))))
-         (log-message :info "Sent to client: '~A'." response)
-         (setf (user-state user) :select-conference)))
-      (:select-conference
-       (let* ((conference-name (cdr (assoc "confname" message :test #'string-equal)))
-              (response (confs:similar conference-name)))
-         (hunchensocket:send-text-message
-          user
-          (json:encode-json-alist-to-string `((:similar-conferences . ,response))))
-         (log-message :info "Sent to client: '~A'." response)
-         (setf (user-state user) :request-impact)))
-      (:request-impact
-       (let* ((conference-name (cdr (assoc "confname" message :test #'string-equal)))
-              (response (confs:impact conference-name)))
-         (hunchensocket:send-text-message
-          user
-          (json:encode-json-alist-to-string `((:similar-conferences . ,response))))
-         (log-message :info "Sent to client: '~A'." response))))
-    ;; (sample-progress-bar user)
-    ))
 
-;;(broadcast tp "~a says ~a" (name user) message-text))
+(defun send-error-message (user message)
+  (hunchensocket:send-text-message
+   user
+   (json:encode-json-alist-to-string
+    `((:operation . "Unknown")
+      (:category . "error")
+      (:message . ,message)))))
+
+(defmethod hunchensocket:text-message-received ((resource explorer) user message-text)
+  "Process WebSocket request to a SAExplorer endpoint.
+
+This function validate correctnes of the request, call processing
+function and send the result back to the USER.
+"
+  (log-message :trace "Message recieved: '~A'." message-text)
+  (handler-case
+      (let ((ws-request (decode-json-from-string message-text)))
+        ;;--- TODO: Validate request
+        ;; Sending result
+        (let ((response (handle-request resource ws-request user)))
+          (hunchensocket:send-text-message
+           user
+           (json:with-explicit-encoder (json:encode-json-to-string response)))
+          (log-message :info "Result sent: ~A." (json:encode-json-alist-to-string response))))
+    (json:json-syntax-error ()
+      (log-message :error "Syntax error.")
+      (send-error-message user "Syntax error in the request"))
+    (t (e)
+      ;;--- FIXME: Catch some errors, not all
+      (log-message :error "Unable to process request: ~A" e)
+      (send-error-message user "Unable to process the request: internal error.")))
+  (log-message :info "Request completed."))

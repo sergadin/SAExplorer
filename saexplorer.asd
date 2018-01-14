@@ -80,6 +80,10 @@
                (:file "explorer")
                (:file "webserver") ; web server starter and tools
                (:file "wsapp")
+               (:module ws-resources
+                        :components
+                        ((:file "package")
+                         (:file "conference")))
                ;; top-level function that starts everything
                (:file "main"))
   :in-order-to ((test-op (load-op saexplorer-test)))
