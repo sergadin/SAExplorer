@@ -23,19 +23,22 @@
 (defun process-find (ws-request user)
   "Process find request."
   (declare (ignore user))
-  (let ((keywords (cdr (assoc "keywords" ws-request :test #'string-equal))))
+  (let* ((data (cdr (assoc "data" ws-request :test #'string-equal)))
+         (keywords (cdr (assoc "keywords" data :test #'string-equal))))
     `(:plist :entries (:list ,@(mapcar #'(lambda (title) `(:plist :title ,title))
                                        (confs:find-relevant keywords))))))
 
 (defun process-similar (ws-request user)
   (declare (ignore user))
-  (let* ((conference-name (cdr (assoc "confname" message :test #'string-equal)))
+  (let* ((data (cdr (assoc "data" ws-request :test #'string-equal)))
+         (conference-name (cdr (assoc "confname" data :test #'string-equal)))
          (response (confs:similar conference-name)))
     `(:alist (:similar-conferences . ,response))))
 
 (defun process-impact (ws-request user)
   (declare (ignore user))
-  (let* ((conference-name (cdr (assoc "confname" message :test #'string-equal)))
+  (let* ((data (cdr (assoc "data" ws-request :test #'string-equal)))
+         (conference-name (cdr (assoc "confname" data :test #'string-equal)))
          (response (confs:impact conference-name)))
     `(:alist (:conference-impact . ,response))))
 

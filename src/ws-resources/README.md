@@ -88,9 +88,12 @@ Conference resource `/conference/` supports following operations
 
 Request:
 ```javascript
-data: {
-  keywords: ["keyword1", "keyword2", ...],
-  title: "string"
+{
+  operation: "find",
+  data: {
+    keywords: ["keyword1", "keyword2", ...],
+    title: "string"
+  }
 }
 ```
 
