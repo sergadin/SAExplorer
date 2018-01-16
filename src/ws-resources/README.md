@@ -89,7 +89,7 @@ Conference resource `/conference/` supports following operations
 Request:
 ```javascript
 data: {
-  keywords: "comma separated list of keywords",
+  keywords: ["keyword1", "keyword2", ...],
   title: "string"
 }
 ```
@@ -111,7 +111,7 @@ result: {
 Request:
 ```javascript
 data: {
-  categories: "comma separated list of categories"
+  categories: ["category1", "category2", ...]
 }
 ```
 

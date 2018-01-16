@@ -169,6 +169,9 @@ for the PATH specified."
       (:category . "error")
       (:message . ,message)))))
 
+(defmethod handle-request :before ((resource explorer) ws-request user)
+    (log-message :trace "handle-request called for ~A" (name resource)))
+
 (defmethod hunchensocket:text-message-received ((resource explorer) user message-text)
   "Process WebSocket request to a SAExplorer endpoint.
 

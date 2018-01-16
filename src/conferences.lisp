@@ -183,10 +183,9 @@ the result could be
 
 
 (defun find-relevant (keywords)
-  "Return a list of conferences related to specified KEYWORDS."
+  "Return a list of conferences related to specified KEYWORDS, a list of strings."
   (let ((result (query (find-system "Scopus")
-                        (format nil "~{KEY(~A)~^ AND ~} AND SRCTYPE(p)"
-                                (split-keywords keywords :delimiter #\,))
+                        (format nil "~{KEY(~A)~^ AND ~} AND SRCTYPE(p)" keywords)
                         :format :json
                         :max-results 80)))
     (loop :for facet :in (bibsys:facets result)

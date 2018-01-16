@@ -8,10 +8,6 @@
   ()
   (:default-initargs :name "/conference/"))
 
-(defclass <conference-resource-compat> (<conference-resource>)
-  ()
-  (:documentation "Compatibility class. TO BE REMOVED.")
-  (:default-initargs :name "/"))
 
 ;; Register the resource
 (add-ws-resource (make-instance '<conference-resource>))
@@ -50,24 +46,12 @@
 ;;;
 
 (defmethod handle-request ((resource <conference-resource>) ws-request user)
-  (log-message :trace "handle-request called")
-  (alexandria:switch ((cdr (assoc "operation" ws-request :test #'string-equal))
-                      :test #'string-equal)
-    ("find" (process-find ws-request user))
-    ("similar" (process-similar ws-request user))
-    ("impact" (process-impact ws-request user))
-    ("describe" '((:error-message . "Not implemented")))))
-
-
-;;--- REMOVE
-(defmethod handle-request ((resource <conference-resource-compat>) ws-request user)
-  (declare (ignore resource))
-  (log-message :warning "----> PLEASE, USE PROPER WS PROTOCOL <----")
-  (json:with-explicit-encoder
-    (log-message :info "~A." (json:encode-json-to-string (process-find ws-request user))))
-  (let ((keywords (cdr (assoc "keywords" ws-request :test #'string-equal))))
-    `(:plist :relevant-conferences (:list "PLEASE, READ src/ws-resources/README.md :)"
-                                          "PLEASE, READ src/ws-resources/README.md :)"
-                                          "PLEASE, READ src/ws-resources/README.md :)"
-                                          "PLEASE, READ src/ws-resources/README.md :)"
-                                          ,@(confs:find-relevant keywords)))))
+  (list
+   :plist
+   :result
+   (alexandria:switch ((cdr (assoc "operation" ws-request :test #'string-equal))
+                       :test #'string-equal)
+     ("find" (process-find ws-request user))
+     ("similar" (process-similar ws-request user))
+     ("impact" (process-impact ws-request user))
+     ("describe" '((:error-message . "Not implemented"))))))
