@@ -190,8 +190,7 @@ function and send the result back to the USER.
         (let ((response (handle-request resource ws-request user)))
           (hunchensocket:send-text-message
            user
-           (json:with-explicit-encoder (json:encode-json-to-string response)))
-          (log-message :info "Result sent: ~A." (json:encode-json-alist-to-string response))))
+           (json:with-explicit-encoder (json:encode-json-to-string response)))))
     (json:json-syntax-error ()
       (log-message :error "Syntax error.")
       (send-error-message user "Syntax error in the request"))
