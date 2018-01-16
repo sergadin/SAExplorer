@@ -14,7 +14,7 @@ $(function() {
         }
     });
 
-    const wsUri = "ws://localhost:12345/";
+    const wsUri = "ws://localhost:12345/conference/";
 
     var websocket = new WebSocket(wsUri);
     var output = document.getElementById("output");
@@ -27,10 +27,10 @@ $(function() {
     function processMessage(evt)
     {
         let data = JSON.parse(evt.data);
-        if (data.hasOwnProperty("progress")) {
-            ractive.set("progress_current_stage", data.progress * 100);
-        } else if (data.hasOwnProperty("relevantConferences")) {
-            ractive.set("conferences", data.relevantConferences.map(name => ({name: name})));
+        if (data.category == "notification" && data.type == "progress") {
+            ractive.set("progress_current_stage", data.data.progress * 100);
+        } else if (data.hasOwnProperty("result") && data.result.hasOwnProperty("entries")) {
+            ractive.set("conferences", data.result.entries);
         }
         writeToScreen('<span style="color: blue;">RESPONSE: ' + evt.data + '</span>');
     }
@@ -49,10 +49,11 @@ $(function() {
 
     $("#explore-btn").on('click', function(e) {
         e.preventDefault();
-        var keywords_inp = $(this).closest('.input-group').find('#keywords')
-        var keywords = keywords_inp.val()
+        let keywords_inp = $(this).closest('.input-group').find('#keywords');
+        let keywords = keywords_inp.val().split(',');
 
-        websocket.send(JSON.stringify({'keywords': keywords}));
+        let data = {keywords: keywords};
+        websocket.send(JSON.stringify({operation: 'find', data: data}));
     });
 
     function conferenceItemClicked(event) {
