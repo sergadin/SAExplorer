@@ -48,12 +48,14 @@
 ;;;
 
 (defmethod handle-request ((resource <conference-resource>) ws-request user)
-  (list
-   :plist
-   :result
-   (alexandria:switch ((cdr (assoc "operation" ws-request :test #'string-equal))
-                       :test #'string-equal)
-     ("find" (process-find ws-request user))
-     ("similar" (process-similar ws-request user))
-     ("impact" (process-impact ws-request user))
-     ("describe" '((:error-message . "Not implemented"))))))
+  (let ((operation (cdr (assoc "operation" ws-request :test #'string-equal))))
+    (list
+     :plist
+     :result
+     (alexandria:switch
+         (operation :test #'string-equal)
+       ("find" (process-find ws-request user))
+       ("similar" (process-similar ws-request user))
+       ("impact" (process-impact ws-request user))
+       ("describe" (saexplorer-error 'not-implemented-error "Not implemented"))
+       (t (saexplorer-error 'invalid-request-error "Unknown operation: `~A`" operation))))))

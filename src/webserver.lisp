@@ -2,7 +2,7 @@
 
 (defpackage :saexplorer.webserver
   (:nicknames :server)
-  (:use :cl :websocket-driver)
+  (:use :cl :websocket-driver :saexplorer.sys)
   (:import-from :cl-log
                 #:log-message)
   (:import-from :cl-json
@@ -162,6 +162,7 @@ for the PATH specified."
 
 
 (defun send-error-message (user message)
+  (log-message :debug "~A" message)
   (hunchensocket:send-text-message
    user
    (json:encode-json-alist-to-string
@@ -194,6 +195,8 @@ function and send the result back to the USER.
     (json:json-syntax-error ()
       (log-message :error "Syntax error.")
       (send-error-message user "Syntax error in the request"))
+    (generic-error (e)
+      (send-error-message user (format nil "An error occurred: ~A" e)))
     (t (e)
       ;;--- FIXME: Catch some errors, not all
       (log-message :error "Unable to process request: ~A" e)

@@ -1,7 +1,8 @@
 (defpackage :saexplorer.sys
   (:use :cl)
   (:export #:*dbcon* #:*config*
-           #:generic-error))
+           #:generic-error #:invalid-request-error #:not-implemented-error
+           #:saexplorer-error))
 
 (defpackage :saexplorer
   (:use :cl :saexplorer.sys)
