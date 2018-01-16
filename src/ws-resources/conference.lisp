@@ -11,7 +11,6 @@
 
 ;; Register the resource
 (add-ws-resource (make-instance '<conference-resource>))
-(add-ws-resource (make-instance '<conference-resource-compat>))
 
 ;;;
 ;;; process-... functions are just interfaces between underlying
