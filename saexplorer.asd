@@ -46,7 +46,7 @@
                "optima" ; pattern matching
                "drakma" "do-urlencode" "html-entities"
                "cl-json" "cxml" "cxml-stp" "xuriella" ; data formats
-               "cl-dbi" "dbd-sqlite3" "md5" ; database access
+               "cl-dbi" "dbd-sqlite3" "md5" "mito" ; database access
                "bordeaux-threads" "usocket" "hunchentoot" "clack" "quri" ; web server
                "hunchensocket" "websocket-driver"; websockets
                "fare-memoization" "cl-redis" ; caching
@@ -66,6 +66,12 @@
                          (:file "cache")
                          (:file "sequences")
                          (:file "keywords")))
+               (:module models
+                        :components
+                        ((:file "package")
+                         (:file "constants")
+                         (:file "common")
+                         (:file "conf")))
                (:file "bibsystem")
                (:file "query")
                (:module systems
