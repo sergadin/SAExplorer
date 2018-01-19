@@ -11,7 +11,10 @@
   (:use :cl :saexplorer.sys :saexplorer.cache)
   (:import-from :cl-log
                 #:log-message)
-  (:export #:<bibliography-system> #:<query> #:<result> #:<facet>
+  (:export #:<bibliography-system>
+           #:<query> #:<search-query> #:<publ-search-query> #:<author-search-query>
+           #:query-filters
+           #:<result> #:<facet>
            #:entries #:facet-items #:facets #:config-option
            #:get-facet
            #:rest-accept-encoding #:parse-response
@@ -35,15 +38,16 @@
 (defclass <bibliography-system> (cl-singleton-mixin:singleton-mixin)
   ((name :type string :initarg :name :initform (error "A name is required!") :accessor system-name)
    (config-options :accessor config-options
-                   :documentation "An alist of which the items are
-dotted lists of key/value pairs being the option names and values
-specified in the config file. By default, options of the System.name
-section.")
+                   :documentation "An alist of which the items are dotted lists of
+key/value pairs being the option names and values specified in the config file. By
+default, options of the System.name section.")
    (proxy-data :accessor proxy-data)
    (accept-encodings :initarg :accept-encodings
-                     :documentation "A plist that maps format names to MIME types used as Accept header for REST requests.")
+                     :documentation "A plist that maps format names to MIME types used
+                     as Accept header for REST requests.")
    (endpoints :accessor endpoints :initarg :endpoints
-              :documentation "A list of `optima:match' templates that maps (operation datatype format) triplets to URI strings."))
+              :documentation "A list of `optima:match' templates that maps (operation
+              datatype format) triplets to URI strings."))
   (:documentation "Representation of a bibliography system."))
 
 
@@ -66,60 +70,39 @@ section.")
 ;;; Queries
 ;;;
 
-(deftype query-operator ()
-  "Operator that can be used in a query atomic expressions."
-  '(member :equal :starts-with :contains))
-
-;; Allowed field names
-(deftype field-name ()
-  "Searchable fields of a document. A specific system may not support all the fields."
-  '(member
-    :aulast ; last name of an author
-    :title ; title of the document
-    :srctitile ; source titile, e.g. journal or conference proceedings name
-    :keywords :authkeywords :description
-    :issn :eissn
-    :volume :issue
-    :pagerange
-    :coverdate
-    :isbn
-    :affiliation
-    :doi
-    :identifier
-    ))
-
-(deftype logical-operation ()
-  "Logical operation that may be used to connect parts of a query (atoms or queries)."
-  '(member :and :or))
-
-
-(defun elements-are-of-type (seq type)
-  (every #'(lambda (x) (typep x type)) seq))
-
-(deftype list-of-type (type)
-  (let ((predicate (gensym)))
-    (setf (symbol-function predicate)
-      #'(lambda (seq) (elements-are-of-type seq type)))
-    `(and list (satisfies ,predicate))))
-
-(defun tripletp (x)
-  "Checks that X is a triplet of the form (`query-operator' `field-name' non-nil-value)"
-  (and ((not (null (third x)))
-        (typep (first x) query-operator)
-        (typep (second x) field-name))))
-
-(deftype query-atom ()
-  "A constraint on single searchable field."
-  '(satisfies tripletp))
-
-(defclass %<query-node> ()
-  ((logical-operation :type logical-operation :initform :and)
-   (items :type '(list-of-type (or query-atom %<query-node>)) :initform nil))
-  (:documentation "Node of a tree corresponding to logical structure of the query."))
-
 (defclass <query> ()
-  ((root :type %<query-node>))
-  (:documentation "System-independent representation of a search query."))
+  ((allow-degradation-p
+    :initarg :allow-degradation
+    :accessor allow-degradation-p
+    :initform t
+    :documentation "If T, which is the default, the query may be modified in
+    accordance with searching capabilities provided by specific system."))
+  (:documentation "Superclass of all system-independent queries."))
+
+(defclass <search-query> (<query>)
+  ((filters :initform nil
+            :accessor query-filters
+            :documentation "The query itself. Defines conditions that should be
+            fulfilled in oreder to include an entity into result. In its simplest
+            form, it is just a keyword that should appear somewere in the item.")
+   (facets :initarg :facets
+           :initform nil
+           :accessor query-facets
+           :documentation "List of requested facets. Each facet is either a facet
+           name, or a pair (:facet-name depth), where depth is a number of items to be
+           computed.")
+   (fields :initarg :fields
+           :initform nil
+           :accessor query-fields
+           :documentation "List of properties to be returned for each matched item."))
+  (:documentation "Superclass of all searching queries."))
+
+(defclass <retrieve-query> (<query>)
+  ((identifier :type 'string
+               :initarg :identifier
+               :accessor query-identifier))
+  (:documentation "Superclass of all object retrieval queries."))
+
 
 ;;;
 ;;; Query results
@@ -127,15 +110,14 @@ section.")
 
 (defclass <facet> ()
   ((name :type string :accessor name :initarg :name
-         :documentation "Name of the facet. This could be the name of
-         an attribute appeared in objects returned by the search query.")
+         :documentation "Name of the facet. This could be the name of an attribute
+         appeared in objects returned by the search query.")
    (items :accessor facet-items :initarg :items :initform nil
           :documentation "List of (:name name :value value :count count) triplets."))
-  (:documentation "Facet description of a search query. Each facet is
-  identified by its name and contains value/name/count triplets, e.g.,
-  for facet by country its content is a mapping from
-  countryid/countryname into number of documents related to this
-  country and matched by the query."))
+  (:documentation "Facet description of a search query. Each facet is identified by
+  its name and contains value/name/count triplets, e.g., for facet by country its
+  content is a mapping from countryid/countryname into number of documents related to
+  this country and matched by the query."))
 
 (defmethod (setf facet-items) :before (new-value (facet <facet>))
   "Verify that NEW-VALUE of FACET's content is a plist."
@@ -192,18 +174,15 @@ section.")
 ;;; Generic functions
 ;;;
 
-(defgeneric rest-endpoint (system operation datatype &key format)
-  (:documentation "Return SYSTEM's REST interface endpoint URI for OPERATION over DATATYPE.
+(defgeneric rest-endpoint (system query &key format)
+  (:documentation "Return SYSTEM's REST interface endpoint URI that
+  should be accessed in order to evaluate the QUERY with the result
+  encoded using FORMAT.
 
-OPERATION is one of the keywords :SEARCH, or :RETRIEVE.
-DATATYPE is the name of dta to be processed, e.g. :AUTHORS, :ARTICLES, or :AFFILIATIONS.
 FORMAT is the keyword derived from the format keyword of `query' generic function.
 "))
 
-(defgeneric rest-endpoint-search (system)
-  (:documentation "Returns endpoint URI for REST search requests."))
-
-(defgeneric rest-query-parameters (system query start chunk-size &key format facets)
+(defgeneric rest-query-parameters (system query start chunk-size &key format)
   (:documentation "Constructs a list of parameters to be passed via
   REST request. List of conses (name . value)."))
 
@@ -226,10 +205,8 @@ FORMAT is the keyword derived from the format keyword of `query' generic functio
           default))))
 
 
-(defgeneric query (system query &key fields facets format max-results)
-  (:documentation "Perform search QUERY on SYSTEM. If FIELDS is given,
-  then it is a list of `field-name's to be returned for each
-  document."))
+(defgeneric query (system query &key format max-results)
+  (:documentation "Perform search QUERY on SYSTEM."))
 
 (defgeneric make-empty-result (system &key format)
   (:documentation "Make an instance of `<result>' for consuming subsequent chunks of data."))
@@ -266,7 +243,8 @@ be updated.
 `*config*'. Compatible with `config-option' method."
   (let ((section-name (concatenate 'string "System." (system-name system))))
     (setf (slot-value system 'config-options)
-          (py-configparser:items *config* section-name))
+          (when (py-configparser:has-section-p *config* section-name)
+            (py-configparser:items *config* section-name)))
     (setf (slot-value system 'proxy-data)
           (list :host (py-configparser:get-option *config* "Proxy" "host")
                 :port (py-configparser:get-option *config* "Proxy" "port" :type :number)
@@ -281,7 +259,7 @@ searching FORMAT in a plist of `accept-encoding' slot, if bound."
       (getf (slot-value system 'accept-encodings) format nil)
       "text/xml, application/json"))
 
-(defmethod rest-endpoint ((system <bibliography-system>) operation datatype &key format)
+(defmethod rest-endpoint ((system <bibliography-system>) (query <query>) &key format)
   "Find matching record in system's endpoints slot, if it is bound."
   (when (not (slot-boundp system 'endpoints))
     (error "Endpoints are not defined for system `~A'" (system-name system)))
@@ -309,11 +287,31 @@ name, or encoding format."
            (format nil "~{~A~^:~}" args)))
     (to-hex (md5:md5sum-string (mkstr (normalize query) args)))))
 
+(defun serialize (query)
+  "Serialize `<query>' instance into a string."
+  (typecase query
+    (string query) ;--- FIXME: all string queries should be replaced by class instances.
+    (t (format nil "~{~A~}" (mapcar #'(lambda (f) (funcall f query))
+                                    (list #'query-filters #'query-facets #'query-fields))))))
 
+(defmethod query ((system <bibliography-system>) query &key format max-results)
+  "Evaluate search QUERY on SYSTEM and return a `<result>' object.
 
-(defmethod query ((system <bibliography-system>) query &key fields facets format max-results)
-  (declare (ignore fields))
-  (let ((endpoint (rest-endpoint-search system))
+It is assumed that in response to a search query the system sends a sequence of
+matching entries, devided into chunks (pagination). Responses for all requests for
+individual chunks, or 'pages', are cached. If the same query with the same paging
+parameters (start/offset) is found in cache, no access to external system is made.
+
+Results are processed by chunks, as far as new data become available. Raw responses
+are cached for about a month.
+
+FORMAT specifies requested result formatting. Possible values are SYSTEM-dependent,
+while typical examples are :JSON, or :XML.
+
+MAX-RESULTS limits maximal number of entries to be acquired from the system. If NIL,
+all results will be downloaded, up to system's predefined limit, if any.
+"
+  (let ((endpoint (rest-endpoint system query :format format))
         (chunk-size 20)
         total-results
         (timeout-sec (* 60 60 24 30)) ;; About one month
@@ -324,11 +322,11 @@ name, or encoding format."
         ((or request-failed
              (and total-results
                   (>= start (min total-results (or max-results total-results))))))
-      ;(red:del (signature query (system-name system) format start chunk-size))
-      (with-cached-result (chunk-content (signature query (system-name system) format start chunk-size) :timeout timeout-sec)
+      ;; (red:del (signature (serialize query) (system-name system) format start chunk-size))
+      (with-cached-result (chunk-content (signature (serialize query) (system-name system) format start chunk-size) :timeout timeout-sec)
           (progn
             (log-message :trace "Accessing ~A start=~D, total=~D." (system-name system) start total-results)
-            (multiple-value-bind (content status-code)
+            (multiple-value-bind (content status-code server-headers)
                 (drakma:http-request endpoint
                                      :method :get
                                      :external-format-in :utf-8
@@ -344,17 +342,26 @@ name, or encoding format."
                                      (when (getf (proxy-data system) :username)
                                        (list (getf (proxy-data system) :username)
                                              (getf (proxy-data system) :password)))
-                                     :additional-headers (rest-query-headers system query :format format :facets facets)
-                                     :parameters (rest-query-parameters system query start chunk-size :format format :facets facets)
+                                     :additional-headers (rest-query-headers system query :format format)
+                                     :parameters (rest-query-parameters system query start chunk-size :format format)
                                      :accept (rest-accept-encoding system query format))
               (setf request-failed (not (= status-code +http-ok+)))
               (when (= status-code +http-ok+)
-                (handler-case
-                    (flexi-streams:octets-to-string content :external-format :utf-8)
-                  (flexi-streams:external-format-encoding-error (e)
-                    ;; Some systems do not encode messages properly?
-                    (declare (ignore e))
-                    content)))))
+                ;; Decode content into string, if needed
+                (multiple-value-bind (type subtype params)
+                    (drakma:get-content-type server-headers)
+                  (if (and (member type '("text") :test #'string-equal)
+                           (member subtype '("plain") :test #'string-equal))
+                      content
+                      (handler-case
+                          (progn
+                            (log-message :debug "Decoding from content-type: ~A/~A; ~A" type subtype params)
+                            (flexi-streams:octets-to-string content :external-format :utf-8))
+                        (flexi-streams:external-format-encoding-error (e)
+                          ;; Some systems do not encode messages properly?
+                          (log-message :error "Content decoding failed: ~A" e)
+                          content)))))))
+        ;; Process cached or just downloaded content
         (if (or (not chunk-content) (string-equal chunk-content "NIL"))
           (setf request-failed t)
           (progn

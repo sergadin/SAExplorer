@@ -26,12 +26,13 @@
     :accept-encodings '(:json "application/json"))
 
 
-(defmethod bibsys::rest-endpoint-search ((system <springer>))
+(defmethod bibsys::rest-endpoint ((system <springer>) query &key format)
+  (declare (ignore query format))
   (format nil "~A/~A" (bibsys::config-option system "api-host") "metadata/json"))
 
 
-(defmethod bibsys::rest-query-parameters ((system <springer>) query start chunk-size &key format facets)
-  (declare (ignore format facets))
+(defmethod bibsys::rest-query-parameters ((system <springer>) query start chunk-size &key format)
+  (declare (ignore format))
   `(("q" . ,query)
     ("p" . ,(format nil "~D" chunk-size))
     ("s" . ,(format nil "~D" start))

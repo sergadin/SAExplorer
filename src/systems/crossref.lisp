@@ -25,13 +25,13 @@
 (defparameter *search-endpoint-url* "works" "URL, without the leading '/', to submit search queries.")
 
 
-(defmethod bibsys::rest-endpoint-search ((system <crossref>))
-  (declare (ignore system))
+(defmethod bibsys::rest-endpoint ((system <crossref>) query &key format)
+  (declare (ignore system query format))
   (format nil "~A/~A" *crossref-api-host* *search-endpoint-url*)
   "https://api.crossref.org/works")
 
 
-(defmethod bibsys::rest-query-parameters ((system <crossref>) query start chunk-size &key format facets)
+(defmethod bibsys::rest-query-parameters ((system <crossref>) query start chunk-size &key format)
   (declare (ignore system format))
   (list (cons "query" query)
         (cons "rows" (format nil "~D" chunk-size))

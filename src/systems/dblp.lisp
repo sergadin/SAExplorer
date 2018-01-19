@@ -7,8 +7,7 @@
   (:use :cl)
   (:import-from :saexplorer.bibsystem
                 #:<bibliography-system>
-                #:<result>
-                #:rest-endpoint-search)
+                #:<result>)
   (:import-from :cl-log
                 #:log-message))
 
@@ -28,12 +27,12 @@
    :matched-entries nil))
 
 
-(defmethod rest-endpoint-search ((system <dblp>))
+(defmethod rest-endpoint ((system <dblp>) query &key format)
   (format nil "~A/~A" *dblp-api-host* *search-endpoint-url*))
 
 
-(defmethod bibsys::rest-query-parameters ((system <dblp>) query start chunk-size &key format facets)
-  (declare (ignore system facets))
+(defmethod bibsys::rest-query-parameters ((system <dblp>) query start chunk-size &key format)
+  (declare (ignore system ))
   `(("q" . ,query)
     ("h" . ,(format nil "~D" chunk-size))
     ("f" . ,(format nil "~D" start))

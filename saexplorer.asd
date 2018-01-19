@@ -80,6 +80,7 @@
                          (:file "wos")
                          (:file "crossref")
                          (:file "springer")
+                         (:file "aminer")
                          (:file "dblp")))
                (:file "keywords")
                (:file "conferences")

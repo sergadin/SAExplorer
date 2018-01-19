@@ -13,11 +13,14 @@
   (:import-from :saexplorer.bibsystem
                 #:<bibliography-system>
                 #:<result>
-                #:rest-endpoint-search #:rest-query-parameters #:rest-query-headers))
+                #:rest-query-parameters #:rest-query-headers))
 
 (in-package :saexplorer.scopus)
 
-(defparameter *search-endpoint-url* "content/search/scopus" "URL, without the leading '/', to submit search queries.")
+(defparameter *default-api-host* "https://api.elsevier.com" "Scopus REST API host and protocol.")
+(defparameter *search-endpoint-url* "content/search/scopus" "URL, without the leading '/', to submit search requests.")
+(defparameter *authors-endpoint-url* "content/search/authors" "URL, without the leading '/', to submit author search requests.")
+
 
 (defparameter *available-facets-names*
   '("exactsrctitle" "au-id" "authname" "pubyear" "subjarea" "language" "af-id" "exactkeyword" "srctype" "country" "aucite")
@@ -29,10 +32,15 @@
                         :xml+atom "text/xml, application/atom+xml"))
 
 
-
-(defmethod rest-endpoint-search ((system <scopus>))
-  (declare (ignore system))
+(defmethod bibsys::rest-endpoint ((system <scopus>) query &key format)
+  (declare (ignore system query format))
   (format nil "~A/~A" (bibsys::config-option system "api-host") *search-endpoint-url*))
+
+
+(defmethod bibsys::rest-endpoint ((system <scopus>) (query <author-search-query>) &key format)
+  (declare (ignore system query format))
+  (format nil "~A/~A" (bibsys::config-option system "api-host") *authors-endpoint-url*))
+
 
 
 (defun format-facets-request (facets-names &key (count 10) (sort "fdna"))
@@ -49,9 +57,20 @@
   (format nil "~{~A~^ w/0 ~}" (split-keywords kw :delimiter #\Space)))
 
 
-(defmethod rest-query-parameters ((system <scopus>) query start chunk-size &key format facets)
-  (declare (ignore system format facets))
-  (list (cons "query" query)
+(defgeneric convert (query)
+  (:documentation "Represent QUERY using Scopus query language.")
+  (:method ((query string))
+    query))
+
+
+(defmethod convert ((query <search-query>))
+  (let ((filters (bibsys:query-filters query)))
+    (car (last filters))))
+
+
+(defmethod rest-query-parameters ((system <scopus>) (query <publ-search-query>) start chunk-size &key format)
+  (declare (ignore system format))
+  (list (cons "query" (convert query))
         ;;(cons "fields" fields)
         (cons "facets" (when (zerop start)
                          (format-facets-request *available-facets-names* :count 30)))
