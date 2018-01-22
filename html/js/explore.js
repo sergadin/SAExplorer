@@ -47,13 +47,21 @@ $(function() {
         $('body').html("<h1>Error</h1><p>Your browser does not support HTML5 Web Sockets. Try Google Chrome instead.</p>");
     }
 
-    $("#explore-btn").on('click', function(e) {
-        e.preventDefault();
-        let keywords_inp = $(this).closest('.input-group').find('#keywords');
-        let keywords = keywords_inp.val().split(',');
-
+    function processInput() {
+        let keywords = $('#keywords').val().split(',');
         let data = {keywords: keywords};
         websocket.send(JSON.stringify({operation: 'find', data: data}));
+    }
+
+    $("#keywords").keypress(function(e) {
+        if (e.key == 'Enter') {
+            processInput();
+        }
+    });
+
+    $("#explore-btn").on('click', function(e) {
+        e.preventDefault();
+        processInput();
     });
 
     function conferenceItemClicked(event) {
