@@ -182,5 +182,7 @@ How to run tests
 Or, using the ASDF testing facility
 
 ```lisp
-(asdf:operate 'asdf:test-op :saexplorer)
+(ql:quickload "saexplorer-test")
+(asdf:test-system "saexplorer")
+;; or (asdf:operate 'asdf:test-op :saexplorer)
 ```

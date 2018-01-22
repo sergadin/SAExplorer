@@ -32,11 +32,17 @@
   jsonpath-valid-syntax
   (ensure-different (jsonpath.parser::parse "$.authors.id") nil)
   (ensure-different (jsonpath.parser::parse "$.authors[0].id") nil)
+  (ensure-different (jsonpath.parser::parse "$.authors[0:2].id") nil)
+  (ensure-different (jsonpath.parser::parse "$.authors[:2].id") nil)
+  (ensure-different (jsonpath.parser::parse "$.authors[2:].id") nil)
+  (ensure-different (jsonpath.parser::parse "$.authors[2:21:3].id") nil)
   (ensure-different (jsonpath.parser::parse "$.authors[*].id") nil)
   (ensure-different (jsonpath.parser::parse "$.authors[*]..id") nil)
   (ensure-different (jsonpath.parser::parse "$.authors[?(@.id > 0)].id") nil)
   (ensure-different (jsonpath.parser::parse "$.authors[?(@.affiliation.id)].id") nil)
-  (ensure-different (jsonpath.parser::parse "$.authors[?(@.affiliation.id > $.year)].id") nil))
+  (ensure-different (jsonpath.parser::parse "$.authors[?(@.affiliation.id > $.year)].id") nil)
+  (ensure-different (jsonpath.parser::parse "$.authors[?(@.affiliation[*].id > $..year)].id") nil)
+  (ensure-different (jsonpath.parser::parse "$..*[?(@.affiliation..id > $.*[2]..year)].id") nil))
 
 
 (addtest (jsonpath)
@@ -62,6 +68,9 @@
   (ensure-same (jsonpath:process json "$.authors[0].id") '(123) :test #'set-equal)
   (ensure-same (jsonpath:process json "$.authors[1].id") '(7) :test #'set-equal)
   (ensure-same (jsonpath:process json "$.authors[*].id") '(123 7) :test #'set-equal)
+  (ensure-same (jsonpath:process json "$.authors[0:].id") '(123 7) :test #'set-equal)
+  (ensure-same (jsonpath:process json "$.authors[0:3].id") '(123 7) :test #'set-equal)
+  (ensure-same (jsonpath:process json "$.authors[0:3:2].id") '(123) :test #'set-equal)
   (ensure-same (jsonpath:process json "$.authors[*].id") '(123 7) :test #'set-equal)
   (ensure-same (jsonpath:process json "$.authors[12345].id") '() :test #'set-equal)
   (ensure-same (jsonpath:process json "$..affiliation.id") '("org-17") :test #'set-equal)
@@ -71,4 +80,17 @@
   (ensure-same (jsonpath:process json "$..*[?(@.org)]..id") '("org-17") :test #'set-equal)
   (ensure-same (jsonpath:process json "$.authors[?(@..org)].id") '(123) :test #'set-equal :report "Deep filtering.")
   (ensure-same (jsonpath:process json "$.*[?(@..org)].id") '(123) :test #'set-equal :report "Deep filtering for wildcard node.")
-  (ensure-same (jsonpath:process json "$..*[?(@..org)].id") '(123 "org-17") :test #'set-equal :report "Deep filtering for deep wildcard nide."))
+  (ensure-same (jsonpath:process json "$..*[?(@..org)].id") '(123 "org-17") :test #'set-equal :report "Deep filtering for deep wildcard node."))
+
+;; More involved expressions
+(addtest (jsonpath)
+  jsonpath-results-relations
+  (ensure-same (jsonpath:process json "$..authors[?(@.id < 20)].id")
+               '(7)
+               :test #'set-equal :report "Deep filtering for deep wildcard node.")
+  (ensure-same (jsonpath:process json "$..authors[?(@..org = 'Some university')].id")
+               '(123)
+               :test #'set-equal :report "Strings comparision in filtering expression.")
+  (ensure-same (jsonpath:process json "$..authors[?(@.id = '123')]..org")
+               '("Some university")
+               :test #'set-equal :report "Strings comparision in filtering expression."))

@@ -53,14 +53,30 @@
 (defrule filter-expr
     (or filter-expr-wildcard
         filter-index-range
+        filter-index-range-defaulted
         filter-predicate-expression)
   (:identity t))
 
 (defrule filter-expr-wildcard "*" (:constant '(:range :any)))
 
 (defrule filter-index-range
-    (or integer)
-  (:lambda (i) (list :range i i 1)))
+    (or (and integer (! ":"))
+        (and integer ":" integer (! ":"))
+        (and integer ":" integer ":" integer))
+  (:lambda (range)
+    (let ((start (nth 0 range))
+          (end (nth 2 range))
+          (step (nth 4 range)))
+    (list :range start (or end start) (or step 1)))))
+
+(defrule filter-index-range-defaulted
+    (or (and integer ":" (! integer))
+        (and ":" integer (! ":")))
+  (:lambda (range)
+    (if (integerp (first range))
+        `(:range ,(first range) :infinity 1)
+        `(:range 0 ,(nth 1 range) 1))))
+
 
 ;; Examples:
 ;;   [?(@.issn)]
@@ -81,11 +97,15 @@
          (* " ")
          (or "<" ">" "=" symbol)
          (* " ")
-         (or jsonpath integer))
+         (or jsonpath constant))
   (:destructure (left sp1 operation sp2 right)
     (declare (ignore sp1 sp2))
     (list :relation operation left right)))
 
+(defrule constant
+    (or integer string)
+  (:lambda (const)
+    `(:constant ,const)))
 
 (defrule operator
     (or "<" ">" "=")
@@ -96,6 +116,9 @@
 ;;;
 (defun not-doublequote (char)
   (not (eql #\" char)))
+
+(defun not-apostrophe (char)
+  (not (eql #\' char)))
 
 (defun not-integer (string)
   (when (find-if-not #'digit-char-p string)
@@ -114,20 +137,22 @@
   (:lambda (list)
     (parse-integer (text list) :radix 10)))
 
-(defrule string (or simple-string triple-quoted-string))
+(defrule string (or simple-string simple-apostrophe-string))
 
 (defrule simple-string (and #\" (* string-char) #\")
   (:destructure (q1 string q2)
     (declare (ignore q1 q2))
     (text string)))
 
-(defrule triple-quoted-string (and (and #\" #\" #\") (* string-char) (and #\" #\" #\"))
+(defrule simple-apostrophe-string (and #\' (* apostrophe-string-char) #\')
   (:destructure (q1 string q2)
     (declare (ignore q1 q2))
     (text string)))
 
+
 (defrule string-char (or (not-doublequote character) (and #\\ #\")))
 
+(defrule apostrophe-string-char (or (not-apostrophe character) (and #\\ #\')))
 
 ;;;
 ;;; Interface function
