@@ -13,4 +13,5 @@
   :serial t
   :components
   ((:file "package")
-   (:file "conference-names")))
+   (:file "conference-names")
+   (:file "jsonpath")))

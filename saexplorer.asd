@@ -50,6 +50,7 @@
                "bordeaux-threads" "usocket" "hunchentoot" "clack" "quri" ; web server
                "hunchensocket" "websocket-driver"; websockets
                "fare-memoization" "cl-redis" ; caching
+               "esrap"
                ; "closure-html"
                "py-configparser")
   :pathname "src"
@@ -63,6 +64,10 @@
                         ((:file "logging")
                          (:file "parsing")
                          (:file "json")
+                         (:module jsonpath
+                                  :components
+                                  ((:file "parser")
+                                   (:file "jsonpath")))
                          (:file "cache")
                          (:file "sequences")
                          (:file "keywords")))
