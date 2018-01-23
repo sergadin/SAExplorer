@@ -52,7 +52,7 @@
   (ensure-error (jsonpath.parser::parse "$.authors[*]...id"))
   (ensure-error (jsonpath.parser::parse "authors[*].id"))
   (ensure-error (jsonpath.parser::parse "$.authors[].id"))
-  (ensure-error (jsonpath.parser::parse "$.authors[?(@.id+1 > 0)].id"))
+  (ensure-error (jsonpath.parser::parse "$.authors[?(@.id^1 > 0)].id"))
   (ensure-error (jsonpath.parser::parse "$.authors(?a).id")))
 
 (defun set-equal (a b &key (test #'equal))

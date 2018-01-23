@@ -124,7 +124,7 @@
   (when (find-if-not #'digit-char-p string)
     t))
 
-(defrule symbol (and alphanumeric (* (or alphanumeric #\- #\_ #\: #\@)))
+(defrule symbol (+ (or alphanumeric #\- #\_ #\: #\@ #\+ #\*))
   (:lambda (list)
     (text list)))
 
