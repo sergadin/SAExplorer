@@ -6,7 +6,7 @@
 
 (defpackage jsonpath
   (:use :cl :jsonpath.parser)
-  (:export #:process))
+  (:export #:process #:match))
 
 (in-package :jsonpath)
 
@@ -158,3 +158,7 @@
   "Evaluate JSONPath expression EXPRESSION over JSON."
   (let ((parsed-expression (parse expression)))
     (process-parsed json parsed-expression)))
+
+(defun match (json expression)
+  "Evaluate JSONPath expression EXPRESSION over JSON and return first match."
+  (first (process json expression)))

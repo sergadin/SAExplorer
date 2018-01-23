@@ -82,6 +82,10 @@
   (ensure-same (jsonpath:process json "$.*[?(@..org)].id") '(123) :test #'set-equal :report "Deep filtering for wildcard node.")
   (ensure-same (jsonpath:process json "$..*[?(@..org)].id") '(123 "org-17") :test #'set-equal :report "Deep filtering for deep wildcard node."))
 
+(addtest (jsonpath)
+  jsonpath-match
+  (ensure-same (jsonpath:match json "$.authors[1].id") 7 :test #'=))
+
 ;; More involved expressions
 (addtest (jsonpath)
   jsonpath-results-relations
