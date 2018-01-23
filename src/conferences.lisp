@@ -10,7 +10,7 @@
   (:import-from :saexplorer
                 #:split-keywords #:gather #:sparse-matchings)
   (:import-from :saexplorer.bibsystem
-                #:query #:find-system)
+                #:query #:find-system #:document-content)
   (:import-from :saexplorer.scopus
                 #:proximity)
   (:export #:impact
@@ -168,8 +168,8 @@ the result could be
                         :max-results 80)))
     (dolist (entry (bibsys:entries result))
       (format t "~A, ~A~%"
-              (jsonpath:match entry "$.prism:issn")
-              (jsonpath:match entry "$.prism:publication-name")))
+              (jsonpath:match (document-content entry) "$.prism:issn")
+              (jsonpath:match (document-content entry) "$.prism:publication-name")))
     (loop :for facet :in (bibsys:facets result)
        :do
        (format t "~A~%" (bibsys::name facet))

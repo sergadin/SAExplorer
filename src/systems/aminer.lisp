@@ -65,6 +65,49 @@
 ;;;   see https://aminer.org/open-academic-graph for the description of fields
 ;;;
 
+(defparameter *aminer-sources*
+  `(("dblp")
+    ("msra")
+    ("mag")
+    ("acm")
+    ("wos")
+    ("scopus")
+    ("ieee"))
+  "Acronyms appearing in AMiner output as values of SRC field in the
+  VERSIONS section.")
+
+(defparameter *json-publication-getters*
+  `((:title . "$.title")
+    (:abstract . "$.abstract")
+    (:authors . "$.authors")
+    (:keywords . "$.keywords")
+    (:lang . "$.lang")
+    (:start-page . "$.pages.s")
+    (:end-page . "$.pages.e")
+    (:year . "$.year")
+    (:venue-name . "$.venue.name")
+    (:doi . "$.doi")
+    (:fulltext-url . "$.pdf"))
+  "Map attributes names to JSONPath expressions used to extract the given attribute from parsed publication.")
+
+(defun extract-ids (entry-json)
+  "Extract known versions of this entry. Result is a list of triplets (aminer-id source
+source-id), where source is AMiner specific code of information source. aminer-ids are
+all different, while others may appear more then once."
+  (loop for info in (jsonpath:match entry-json "$.versions")
+     collect (mapcar #'(lambda (jp) (jsonpath:match info jp)) '("$.id" "$.src" "$.sid"))))
+
+
+(defun parse-entry-json (entry-json)
+  (let ((ids-for-entry (extract-ids entry-json))
+        (aminer (bibsys:find-system "AMiner")))
+    ;;(log-message :info "~A" ids-for-entry)
+    (make-instance 'bibsys:<publication-document>
+                   :identifier (bibsys:make-identifier (caar ids-for-entry) aminer)
+                   :source-system aminer
+                   :content entry-json :format :json
+                   :getters (make-jsonpath-getter *json-publication-getters*))))
+
 (defmethod bibsys:parse-response ((system <aminer>) content (format (eql :json)) &key result-object)
   (declare (ignore system))
   (let* ((json (cl-json:decode-json-from-string content))
@@ -78,8 +121,8 @@
 
 (defun self-test ()
   (let ((q (make-instance '<publ-search-query>)))
-    (loop for doc in (bibsys:entries (print (bibsys::query (bibsys:find-system "AMiner")
+    (loop for doc in (bibsys:entries (bibsys::query (bibsys:find-system "AMiner")
                                                     (bibsys::make-simple-query q "abac")
                                                     :max-results 20
-                                                    :format :json)))
+                                                    :format :json))
        do (log-message :info "~A" (bibsys::document-property doc :title)))))

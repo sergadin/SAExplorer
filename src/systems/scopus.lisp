@@ -58,10 +58,10 @@
 
 
 (defgeneric convert (query)
-  (:documentation "Represent QUERY using Scopus query language.")
-  (:method ((query string))
-    query))
+  (:documentation "Represent QUERY using Scopus query language."))
 
+(defmethod convert ((query string))
+  query)
 
 (defmethod convert ((query <search-query>))
   (let ((filters (bibsys:query-filters query)))
@@ -88,8 +88,28 @@
 ;;; Parse response
 ;;;
 
+(defparameter *scopus-json-publication-getters*
+  `((:id . "$.dc:identifier")
+    (:title . "$.dc:title")
+    (:abstract . "$.abstract")
+    (:authors . "$.authors")
+    (:keywords . "$.authkeywords")
+    (:lang . nil)
+    (:start-page . "$.prism:page-range")
+    (:end-page . "$.prism:page-range")
+    (:year . "$.prism:cover-date")
+    (:venue-name . "$.prism:publication-name")
+    (:doi . "$.prism:doi")
+    (:fulltext-url . nil)))
+
+
 (defun parse-entry (entry-json)
-  entry-json)
+  (let ((scopus (bibsys:find-system "Scopus")))
+    (make-instance 'bibsys:<publication-document>
+                   :identifier (bibsys:make-identifier "123" scopus)
+                   :source-system scopus
+                   :content entry-json :format :json
+                   :getters (bibsys:make-jsonpath-getter *scopus-json-publication-getters*))))
 
 (defun ensure-multiple-categories (category-data)
   "Facet data format differes for single-item and multiple items

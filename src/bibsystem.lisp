@@ -3,6 +3,8 @@
 ;;;; to provide a unified interface to query different ssytems, such
 ;;;; as Scopus, Crossref, or Springr.
 ;;;;
+;;;; Main concepts are: bibliography system, document, query, and result.
+;;;;
 
 (in-package :cl-user)
 
@@ -13,12 +15,14 @@
                 #:log-message)
   (:export #:<bibliography-system>
            #:<query> #:<search-query> #:<publ-search-query> #:<author-search-query>
+           #:<publication-document> #:make-identifier
+           #:make-jsonpath-getter
            #:query-filters
-           #:<result> #:<facet>
+           #:<result> #:<facet> #:<document>
            #:entries #:facet-items #:facets #:config-option
            #:get-facet
            #:rest-accept-encoding #:parse-response
-           #:define-bibsystem
+           #:define-bibsystem #:find-system
            #:retrieve
            #:make-query))
 
@@ -36,7 +40,9 @@
 
 
 (defclass <bibliography-system> (cl-singleton-mixin:singleton-mixin)
-  ((name :type string :initarg :name :initform (error "A name is required!") :accessor system-name)
+  ((name :type string
+         :initarg :name :initform (error "A name is required!")
+         :accessor system-name)
    (config-options :accessor config-options
                    :documentation "An alist of which the items are dotted lists of
 key/value pairs being the option names and values specified in the config file. By
@@ -45,26 +51,84 @@ default, options of the System.name section.")
    (accept-encodings :initarg :accept-encodings
                      :documentation "A plist that maps format names to MIME types used
                      as Accept header for REST requests.")
+   (xdefault-format :initarg :default-format
+                    :documentation "")
    (endpoints :accessor endpoints :initarg :endpoints
               :documentation "A list of `optima:match' templates that maps (operation
               datatype format) triplets to URI strings."))
   (:documentation "Representation of a bibliography system."))
 
 
+;;;
+;;; Documents
+;;;
+
 (defclass <identifier> ()
-  ((id :type string :accessor id-string
+  ((id :initarg :id-string
+       :type string :accessor id-string
        :documentation "Identifier as a string.")
-   (system :type <bibliography-system> :accessor system
+   (system :initarg :system
+           :type <bibliography-system> :accessor id-system
            :documentation "The system that issued ID.")
-   (aliases :accessor aliases :initform nil
+   (aliases :initarg :aliases :initform '()
+            :accessor id-aliases
             :documentation "Identifiers of the same document in other systems."))
   (:documentation "Identifier of any entity of a `<bibliography-system>'."))
 
+(defun make-identifier (id-string system &optional aliases)
+  (declare (ignore aliases))
+  (let ((the-system (etypecase system
+                      (string (find-system system))
+                      (<bibliography-system> system))))
+    (make-instance '<identifier> :id-string id-string :system the-system)))
 
-(defclass <entity> ()
-  ((identifier :accessor identifier))
-  (:documentation "An identifiable entity in a bibliography
-  system. Examples are publication, author, etc."))
+(defclass <document> ()
+  ((identifier :initarg :identifier :accessor identifier)
+   (source :initarg :source-system
+           :documentation "The `<bibliography-system>' the document was acquired.")
+   (content :initarg :content
+            :reader document-content
+            :documentation "Original content obtained from the system.")
+   (format :initarg :format :initform (error "Format is required")
+           :documentation "Format of the document's CONTENT.")
+   (retrievedp :initarg :retrievedp :initform nil
+               :documentation "Was this document retrieved, or just
+               extracted from the response to a search request?")
+   (getters :reader document-getters
+            :initarg :getters
+            :documentation "A mapping from property name to property
+            getters. A getter is a function with single argument, the
+            content of the document.")
+   (valid-properties :initarg :valid-properties
+                     :allocation :class
+                     :reader document-valid-properties
+                     :documentation "A list of supported attributes."))
+  (:documentation "An identifiable entity in a bibliography system, for example
+  publication, or author."))
+
+(defgeneric document-property (document property &optional default)
+  (:documentation "Extract PROPERTY value from the DOCUMENT."))
+
+
+(defmethod document-property ((document <document>) property &optional (default nil supplied-p-default))
+  "Extract document's property using its getters."
+  ;;--- TODO: signal an error when no getter exists.
+  (let* ((the-getter (getf (document-getters document) property))
+         (value (when the-getter
+                  (funcall the-getter
+                           (document-content document)))))
+    (if (and (null value) supplied-p-default)
+        default
+        value)))
+
+(fare-memoization:define-memo-function make-jsonpath-getter (getters-def)
+  "Make getters from the supplied definitions GETTERS-DEF. Getters definiton is an
+alist that maps property names to jsdonpath expressions."
+  (loop for (key . expr) in getters-def
+     nconcing (list key (let ((access-path expr)) ; catch expr value
+                          #'(lambda (json)
+                              (jsonpath:match json access-path))))))
+
 
 ;;;
 ;;; Queries
@@ -322,7 +386,7 @@ all results will be downloaded, up to system's predefined limit, if any.
         ((or request-failed
              (and total-results
                   (>= start (min total-results (or max-results total-results))))))
-      ;; (red:del (signature (serialize query) (system-name system) format start chunk-size))
+      ;;(red:del (signature (serialize query) (system-name system) format start chunk-size))
       (with-cached-result (chunk-content (signature (serialize query) (system-name system) format start chunk-size) :timeout timeout-sec)
           (progn
             (log-message :trace "Accessing ~A start=~D, total=~D." (system-name system) start total-results)

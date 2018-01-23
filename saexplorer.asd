@@ -77,6 +77,7 @@
                          (:file "common")
                          (:file "conf")))
                (:file "bibsystem")
+               (:file "documents")
                (:file "query")
                (:module systems
                         :components

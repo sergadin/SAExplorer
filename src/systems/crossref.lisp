@@ -3,26 +3,23 @@
 
 (defpackage saexplorer.crossref
   (:nicknames :crossref)
-  (:use :cl)
+  (:use :cl :saexplorer.bibsystem)
   (:import-from :cl-log
                 #:log-message))
 
 (in-package :saexplorer.crossref)
 
+(define-bibsystem ("Crossref")
+    :accept-encodings '(:json "application/json"))
 
-(defclass <crossref> (bibsys:<bibliography-system>)
-  ()
-  (:default-initargs
-   :name "Crossref"
-    :accept-encodings '(:json "application/json")))
-
-(defclass <crossref-result> (bibsys:<result>)
-  ()
-  (:default-initargs
-   :matched-entries nil))
 
 (defparameter *crossref-api-host* "https://api.crossref.org")
 (defparameter *search-endpoint-url* "works" "URL, without the leading '/', to submit search queries.")
+
+;; Do not use proxy, as it requires authentication on the AMiner site.
+(defmethod bibsys::proxy-data ((system <crossref>))
+  (declare (ignore system))
+  nil)
 
 
 (defmethod bibsys::rest-endpoint ((system <crossref>) query &key format)
@@ -38,13 +35,46 @@
         (cons "offset" (format nil "~D" start))
         (cons "mailto" "serg@msu.ru")))
 
+;;;
+;;; Parsing response
+;;;
+
+(defparameter *json-publication-getters*
+  `((:id . "$.doi")
+    (:title . "$.title[0]")
+    (:abstract . nil)
+    (:authors . "$.author")
+    (:keywords . "$.keywords")
+    (:lang . nil)
+    (:start-page . "$.page")
+    (:end-page . "$.page")
+    (:year . "$.issued.date-parts[0]")
+    (:venue-name . "$.container-title[0]")
+    (:doi . "$.+doi+")
+    (:fulltext-url . "$.link[?(@.intendent-application='text-mining')]"))
+  "Map attributes names to JSONPath expressions used to extract the
+  given attribute from parsed publication.")
+
+
+(defun parse-entry-json (entry-json)
+  (let ((document-id (jsonpath:match entry-json "$.doi"))
+        (system (find-system "crossref")))
+    (make-instance '<publication-document>
+                   :identifier (make-identifier "document-id" system)
+                   :source-system system
+                   :content entry-json :format :json
+                   :getters (make-jsonpath-getter *json-publication-getters*))))
+
+
 (defmethod bibsys::parse-response ((system <crossref>) content format &key result-object)
   (declare (ignore system format))
   (let* ((document (cl-json:decode-json-from-string content))
          (total-results (jsonpath:match document "$.message.total-results"))
+         (entries (jsonpath:match document "$.message.items"))
          (result (or result-object (make-instance '<crossref-result> :total-results total-results))))
+    (setf (bibsys:entries result) (append (bibsys:entries result)
+                                          (mapcar #'parse-entry-json entries)))
     result))
-
 
 
 
