@@ -6,7 +6,7 @@
 
 (defpackage jsonpath
   (:use :cl :jsonpath.parser)
-  (:export #:process #:match))
+  (:export #:process #:match #:match-all))
 
 (in-package :jsonpath)
 
@@ -107,12 +107,6 @@
     ((and (consp (car json)) (keywordp (caar json))) :dict)
     (t nil)))
 
-(defun node-value (json)
-  (case (node-type json)
-    (:dict (cdar json))
-    (:list (cdr json))
-    (t json)))
-
 
 (defun process-parsed (document-root parsed-expression)
   "Evaluate parsed JSONPath expression over json document DOCUMENT-ROOT."
@@ -120,15 +114,19 @@
     (labels
         ((scan-list (values filter next-expr-items)
            ;; Call %process for all items of VALUES that match FILTER
-           (loop for value-list-item in values and index from 0
-              when (or (not filter)
-                       (match-filter-p value-list-item index document-root filter))
-              do (%process value-list-item next-expr-items)))
+           (if (and (null filter) (null next-expr-items))
+               ;; just save values as a list
+               (pushnew values matched-nodes)
+               ;; some filtering is required, visit every node
+               (loop for value-list-item in values and index from 0
+                  when (or (not filter)
+                           (match-filter-p value-list-item index document-root filter))
+                  do (%process value-list-item next-expr-items))))
          (%process (current expr-items)
            ;; Walk on json tree rooted at CURRENT. Matching nodes are pushed into
            ;; MATCHED-NODES. A node is matched if expr-items is empty.
            (when (null expr-items)
-             (pushnew (node-value current) matched-nodes))
+             (pushnew current matched-nodes))
            (when (or (null expr-items) (null current))
              (return-from %process nil))
            (destructuring-bind (descend node-name filter)
@@ -159,6 +157,19 @@
   (let ((parsed-expression (parse expression)))
     (process-parsed json parsed-expression)))
 
+(defun match-all (json expression)
+  "Evaluate JSONPath expression EXPRESSION over JSON."
+  (process json expression))
+
 (defun match (json expression)
-  "Evaluate JSONPath expression EXPRESSION over JSON and return first match."
-  (first (process json expression)))
+  "Evaluate JSONPath expression EXPRESSION over JSON and return first match.
+
+Note that if the value of the selected element is a list, then adding filtering
+expression changes the behavior. For example, calling MATCH function with '$.a.b-list'
+returns all elements of the list, while '$.a.b-list[*]' returns only the first
+element. `MATCH-ALL' will return a list of all elements, as individual matches (not a
+match with filtered list of values). It means that if []-filter is used at the end, the
+effective query selects list elements.
+"
+  (let ((all-matches (process json expression)))
+    (first all-matches)))
