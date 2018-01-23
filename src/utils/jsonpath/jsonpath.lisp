@@ -97,15 +97,12 @@
 
 (defun node-type (json)
   (cond
-    ;; k: constant
+    ;; constant
     ((atom json) :atom)
-    ;; k: [1, 2, 3]
-    ((and (listp json) (atom (car json))) :list)
-    ;; k: [{...}, {...}]
-    ((and (consp (car json)) (consp (caar json))) :list)
-    ;; k: {...}
+    ;; {"k": val, "k2": val, ...}
     ((and (consp (car json)) (keywordp (caar json))) :dict)
-    (t nil)))
+    ;; everything else are lists
+    (t :list)))
 
 
 (defun process-parsed (document-root parsed-expression)
