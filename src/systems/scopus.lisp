@@ -88,13 +88,6 @@
 ;;; Parse response
 ;;;
 
-(defun get-json-item (json keys-path)
-  "Extract value of an item specified by a sequence of json keys."
-  (reduce #'(lambda (sub-json key)
-              (cdr (assoc key sub-json)))
-          (if (listp keys-path) keys-path (list keys-path))
-          :initial-value json))
-
 (defun parse-entry (entry-json)
   entry-json)
 
@@ -128,9 +121,9 @@ of by-author facet using # delimiter."
   "Parse JSON document returned by Scopus search engine."
   (declare (ignore system))
   (let* ((json (cl-json:decode-json-from-string content))
-         (total-results (parse-integer (get-json-item json '(:search-results :opensearch\:total-results))))
-         (facets (get-json-item json '(:search-results :facet)))
-         (entries (get-json-item json '(:search-results :entry)))
+         (total-results (parse-integer (jsonpath:match json "$.search-results.opensearch:total-results")))
+         (facets (jsonpath:match json "$.search-results.facet"))
+         (entries (jsonpath:match json "$.search-results.entry"))
          (result (or result-object (make-instance '<scopus-result> :total-results total-results))))
     ;; Assign facet data
     (when (or (not (slot-boundp result 'bibsys:facets))
@@ -232,7 +225,7 @@ of by-author facet using # delimiter."
 ;;           (ecase format
 ;;             (:json
 ;;              (let ((document (cl-json:decode-json-from-string chunk-content)))
-;;                (setf total-results (parse-integer (get-json-item document '(:search-results :opensearch\:total-results))))))
+;;                (setf total-results (parse-integer (jsonpath:match document "$.search-results.opensearch:total-results")))))
 ;;             (:xml+atom
 ;;              (let* ((document (cxml:parse chunk-content (cxml-stp:make-builder)))
 ;;                     (nodes (stp:filter-recursively (stp:of-name "totalResults"

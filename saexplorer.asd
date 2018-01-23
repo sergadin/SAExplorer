@@ -63,7 +63,6 @@
                         :components
                         ((:file "logging")
                          (:file "parsing")
-                         (:file "json")
                          (:module jsonpath
                                   :components
                                   ((:file "parser")

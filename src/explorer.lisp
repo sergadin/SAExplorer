@@ -25,29 +25,29 @@
   "Parse document returned by Scopus and creates instance of `<search-results>' class."
   (let ((json (cl-json:decode-json-from-string content)))
     (make-instance '<search-results>
-                   :matched-entries (scopus::get-json-item json '(:search-results :entry))
-                   :facets (scopus::get-json-item json '(:search-results :facet)))))
+                   :matched-entries (jsonpath:match json "$.search-results.entry")
+                   :facets (jsonpath:match json "$.search-results.facet"))))
 
 
 
 (defun process-item (start content)
   (declare (ignore start))
   (let* ((json (cl-json:decode-json-from-string content))
-         (entries (scopus::get-json-item json '(:search-results :entry))))
+         (entries (jsonpath:match json "$.search-results.entry")))
     (dolist (entry entries)
-      (log-message :info "~A" (scopus::get-json-item entry '(:prism\:publication-name))))))
+      (log-message :info "~A" (jsonpath:match entry "$.prism:publication-name")))))
 
 
 (defun scopus->entries (scopus-results)
   "Convert Scopus search result into list of parsed entries."
   (mapcan #'(lambda (chunk-content)
-              (scopus::get-json-item (cl-json:decode-json-from-string chunk-content)
-                                     '(:search-results :entry)))
+              (jsonpath:match (cl-json:decode-json-from-string chunk-content)
+                              "$.search-results.entry"))
           scopus-results))
 
 (defun scopus->facets (scopus-results)
-  (scopus::get-json-item
-   (cl-json:decode-json-from-string (first scopus-results)) '(:search-results :facet)))
+  (jsonpath:match
+   (cl-json:decode-json-from-string (first scopus-results)) "$.search-results.facet"))
 
 
 ;;; Main function

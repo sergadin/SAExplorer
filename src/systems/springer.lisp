@@ -73,7 +73,7 @@ compatible with `<facet>' items."
                                                 :items (extract-facet-values springer-json
                                                                              facet-name)))
                              *facets-names*)))
-      (push (saexplorer::get-json-item springer-json '(:records)) entries))
+      (push (jsonpath:match springer-json "$.records") entries))
     result))
 
 ;;;

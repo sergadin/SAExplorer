@@ -168,9 +168,8 @@ the result could be
                         :max-results 80)))
     (dolist (entry (bibsys:entries result))
       (format t "~A, ~A~%"
-              ;;(scopus::get-json-item entry '(:dc\:identifier))
-              (scopus::get-json-item entry '(:prism\:issn))
-              (scopus::get-json-item entry '(:prism\:publication-name))))
+              (jsonpath:match entry "$.prism:issn")
+              (jsonpath:match entry "$.prism:publication-name")))
     (loop :for facet :in (bibsys:facets result)
        :do
        (format t "~A~%" (bibsys::name facet))

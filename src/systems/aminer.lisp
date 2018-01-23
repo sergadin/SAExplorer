@@ -8,7 +8,6 @@
 (defpackage saexplorer.aminer
   (:nicknames :aminer)
   (:use :cl :saexplorer.bibsystem)
-  (:import-from :saexplorer #:get-json-item)
   (:import-from :cl-log
                 #:log-message))
 
@@ -22,11 +21,11 @@
   (declare (ignore system))
   nil)
 
-(defmethod rest-endpoint ((system <aminer>) (query <publ-search-query>) &key format)
+(defmethod bibsys::rest-endpoint ((system <aminer>) (query <publ-search-query>) &key format)
   (declare (ignore system query format))
   "https://api.aminer.org/api/search/pub/advanced")
 
-(defmethod rest-endpoint ((system <aminer>) (query <author-search-query>) &key format)
+(defmethod bibsys::rest-endpoint ((system <aminer>) (query <author-search-query>) &key format)
   (declare (ignore system query format))
   "https://api.aminer.org/api/search/person/advanced")
 
@@ -56,7 +55,6 @@
 
 (defmethod bibsys::rest-query-parameters
     ((system <aminer>) (query <author-search-query>) start chunk-size &key format)
-  ""
   (declare (ignore system format))
   (list (cons "term" query)
         (cons "size" (string chunk-size))
@@ -64,25 +62,24 @@
 
 ;;;
 ;;; Parsing responses
+;;;   see https://aminer.org/open-academic-graph for the description of fields
 ;;;
-
-(defun parse-entry (entry-json)
-  entry-json)
 
 (defmethod bibsys:parse-response ((system <aminer>) content (format (eql :json)) &key result-object)
   (declare (ignore system))
   (let* ((json (cl-json:decode-json-from-string content))
-         (total-results (get-json-item json '(:total)))
-         (entries (get-json-item json '(:result)))
+         (total-results (jsonpath:match json "$.total"))
+         (entries (jsonpath:match json "$.result"))
          (result (or result-object (make-instance '<aminer-result> :total-results total-results))))
     (setf (bibsys:entries result) (append (bibsys:entries result)
-                                          (mapcar #'parse-entry entries)))
+                                          (mapcar #'parse-entry-json entries)))
     result))
 
 
 (defun self-test ()
   (let ((q (make-instance '<publ-search-query>)))
-    (bibsys::query (bibsys::find-system "AMiner")
-                   (bibsys::make-simple-query q "abac")
-                   :max-results 500
-                   :format :json)))
+    (loop for doc in (bibsys:entries (print (bibsys::query (bibsys:find-system "AMiner")
+                                                    (bibsys::make-simple-query q "abac")
+                                                    :max-results 20
+                                                    :format :json)))
+       do (log-message :info "~A" (bibsys::document-property doc :title)))))

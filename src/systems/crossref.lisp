@@ -41,7 +41,7 @@
 (defmethod bibsys::parse-response ((system <crossref>) content format &key result-object)
   (declare (ignore system format))
   (let* ((document (cl-json:decode-json-from-string content))
-         (total-results (scopus::get-json-item document '(:message :total-results)))
+         (total-results (jsonpath:match document "$.message.total-results"))
          (result (or result-object (make-instance '<crossref-result> :total-results total-results))))
     result))
 
