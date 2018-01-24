@@ -9,12 +9,12 @@
 (defun extract-venue (hit-item)
   "Extract conference description from parsed JSON element coresponding to a hit item of DBLP response."
   (mapcan #'(lambda (x) (destructuring-bind (key path) x
-                          (list key (saexplorer::get-json-item hit-item path))))
-          '((:id (:@id))
-            (:name (:info :venue))
-            (:acronym (:info :acronym))
-            (:type (:info :type))
-            (:key (:info :url)))))
+                          (list key (jsonpath:match hit-item path))))
+          '((:id "$.@id")
+            (:name "$.info.venue")
+            (:acronym "$.info.acronym")
+            (:type "$.info.type")
+            (:key "$.info.url"))))
 
 (defun get-all-venues (term-prefix &key (max-results nil))
   "Return descriptions of all conferences containing a word starting with TERM-PREFIX in the title."
@@ -36,10 +36,10 @@
         (when (= status-code 200)
           (let* ((chunk-content (flexi-streams:octets-to-string content :external-format :utf-8))
                  (document (json:decode-json-from-string chunk-content))
-                 (hits (saexplorer::get-json-item document '(:result :hits))))
+                 (hits (jsonpath:match document "$.result.hits")))
             (unless total-results
-              (setf total-results (parse-integer (saexplorer::get-json-item hits '(:@total)))))
-            (push (mapcar #'extract-venue (saexplorer::get-json-item hits '(:hit)))
+              (setf total-results (parse-integer (jsonpath:match hits "$.@total"))))
+            (push (mapcar #'extract-venue (jsonpath:match hits "$.hit"))
                   venues)))))
     (reduce #'append venues :initial-value '())))
 
