@@ -22,6 +22,5 @@
              (:file "elastic-search")
              (:file "process")
              (:file "indexer")))
-   (:file "process-mag")
    (:file "core-confs")
    (:file "dblp-conferences")))
