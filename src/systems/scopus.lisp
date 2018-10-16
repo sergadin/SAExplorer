@@ -20,6 +20,7 @@
 (defparameter *default-api-host* "https://api.elsevier.com" "Scopus REST API host and protocol.")
 (defparameter *search-endpoint-url* "content/search/scopus" "URL, without the leading '/', to submit search requests.")
 (defparameter *authors-endpoint-url* "content/search/authors" "URL, without the leading '/', to submit author search requests.")
+(defparameter *serials-endpoint-url* "https://api.elsevier.com/content/serial/title" "Serial title search URL, without the leading '/'.")
 
 
 (defparameter *available-facets-names*
@@ -40,6 +41,11 @@
 (defmethod bibsys::rest-endpoint ((system <scopus>) (query <author-search-query>) &key format)
   (declare (ignore system query format))
   (format nil "~A/~A" (bibsys::config-option system "api-host") *authors-endpoint-url*))
+
+(defmethod bibsys::rest-endpoint ((system <scopus>) (query <conf-search-query>) &key format)
+  (declare (ignore system query format))
+  (format nil "~A/~A" (bibsys::config-option system "api-host") *authors-endpoint-url*))
+
 
 
 
@@ -82,6 +88,17 @@
   (declare (ignore system format facets))
   `(("X-ELS-APIKey" . ,(bibsys:config-option system "api-key"))
     ("X-ELS-ResourceVersion" . "XOCS")))
+
+;;; Serial titles query
+(defmethod rest-query-parameters
+    ((system <scopus>)
+     (query <conf-search-query>)
+     start
+     chunk-size
+     &key format)
+  `(("title" . ,(convert query))
+    ("count" . ,(format nil "~D" chunk-size))
+    ("start" . ,(format nil "~D" start))))
 
 
 ;;;

@@ -14,7 +14,7 @@
   (:import-from :cl-log
                 #:log-message)
   (:export #:<bibliography-system>
-           #:<query> #:<search-query> #:<publ-search-query> #:<author-search-query>
+           #:<query> #:<search-query> #:<publ-search-query> #:<author-search-query> #:<conf-search-query>
            #:<publication-document> #:make-identifier
            #:make-jsonpath-getter
            #:query-filters
@@ -51,8 +51,8 @@ default, options of the System.name section.")
    (accept-encodings :initarg :accept-encodings
                      :documentation "A plist that maps format names to MIME types used
                      as Accept header for REST requests.")
-   (xdefault-format :initarg :default-format
-                    :documentation "")
+   (default-format :initarg :default-format
+     :documentation "")
    (endpoints :accessor endpoints :initarg :endpoints
               :documentation "A list of `optima:match' templates that maps (operation
               datatype format) triplets to URI strings."))

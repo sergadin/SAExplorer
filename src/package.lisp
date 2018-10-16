@@ -10,4 +10,4 @@
   (:import-from #:alexandria
                 #:define-constant
                 #:when-let)
-  (:export #:main))
+  (:export #:main #:init))

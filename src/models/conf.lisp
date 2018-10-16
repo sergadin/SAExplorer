@@ -34,3 +34,32 @@
   (:table-name "conference")
   (:unque-keys (name entity))
   (:documentation "Conference names and acronyms."))
+
+
+
+(defclass <cfp-page> (<model>)
+  ((name :col-type (:varchar 512)
+         :initarg :name
+         :accessor conf-name)
+   (acronym :col-type (or (:varchar 32) :null)
+            :initarg :acronym
+            :accessor conf-acronym)
+   (year :col-type (or :integer :null)
+         :initarg :year
+         :accessor conf-year)
+   (conftype :col-type (or <conf-type> :null)
+             :initarg :conftype
+             :accessor conf-conftype)
+   (url :col-type (:varchar 512)
+        :initarg :url
+        :accessor conf-url)
+   (source :col-type (:varchar 512)
+           :initarg :url
+           :accessor cfp-source)
+   (source-url :col-type (:varchar 512)
+               :initarg :url
+               :accessor cfp-source-url))
+  (:metaclass mito:dao-table-class)
+  (:table-name "cfp")
+  (:unque-keys (name entity))
+  (:documentation "Call for Papers."))

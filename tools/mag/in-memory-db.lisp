@@ -1,4 +1,4 @@
-;;;; 'Database' structure for Microsoft academig graph
+;;;; 'Database' structure for Microsoft academic graph
 
 
 (require 'lparallel)

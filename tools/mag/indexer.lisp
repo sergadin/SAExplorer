@@ -1,4 +1,4 @@
-;;;; Process Microsoft academig graph JSON data
+;;;; Process Microsoft academic graph JSON data
 
 (in-package :saexplorer.tools)
 
@@ -137,24 +137,32 @@
     (with-open-file (output "F:/mag-index.txt"
                             :direction :output
                             :if-does-not-exist :create
-                            :if-exists :supersede)
+                            :if-exists :supersede
+                            :external-format :utf8)
       (flet ((record-processor (json filename position length)
-               (format nil "~{~A~^ ~}"
-                       (list (cdr (assoc :id json))
-                             (let ((name (pathname-name filename)))
-                               (subseq name (1+ (position #\_ name :from-end t))))
-                             position
-                             length
-                             ;(cdr (assoc :year json))
-                             ;(length (cdr (assoc :url json)))
-                             ;(cdr (assoc :title json))
-                             ;(format nil "~{~A~^ ;; ~}"
-                             ;        (or (cdr (assoc :keywords json)) '()))
-                             ;(or (cdr (assoc :abstract json)) "")
-                             )))
+               "Format record as a string: ID file-index offset length year number-of-urls title double-semicolon-separated-keywords abstract"
+               ;; UTF-16 magic eliminates strange UTF-8 encoding error, see:
+               ;; https://stackoverflow.com/questions/17665322/sbcl-encoding-error-only-when-executed-from-prompt
+               (babel:octets-to-string
+                (babel:string-to-octets
+                 (format nil "~{~A~^ ~}"
+                         (list (cdr (assoc :id json))
+                               (let ((name (pathname-name filename)))
+                                 (subseq name (1+ (position #\_ name :from-end t))))
+                               position
+                               length
+                               (cdr (assoc :year json))
+                               (length (cdr (assoc :url json)))
+                               (cdr (assoc :title json))
+                               (format nil "~@[ ;; ~{~A~^ ;; ~}~]"
+                                       (or (cdr (assoc :keywords json)) nil))
+                               (or (cdr (assoc :abstract json)) "")))
+                 :encoding :utf-16le)
+                :encoding :utf-16le))
              (filter (json)
                (and
-                (or
+                #+(or)(or
+                 (null (cdr (assoc :fos json)))
                  (member "Medicine" (cdr (assoc :fos json)) :test #'string=)
                  (member "Biology" (cdr (assoc :fos json)) :test #'string=))
                 (member (cdr (assoc :lang json)) '("en" "ru") :test #'string=)))
@@ -172,6 +180,16 @@
          :record-processor #'record-processor
          :output-writer #'writer
          :lines-limit nil)))))
+
+
+(defun load-mag-record (file-name offset &optional length)
+  (declare (ignore length))
+  (with-open-file (mag-file file-name
+                            :direction :input
+                            :external-format :utf-8)
+    (file-position mag-file offset)
+    (json:decode-json-from-string (read-line mag-file nil nil))))
+
 
 
 
@@ -192,3 +210,31 @@
                    #p"/users/serg/temp/mag-authors.txt")))
 
 ;; (es-index-create *es-index* 1 0)
+
+
+(with-open-file (urls #p"mag-urls.py"
+                      :direction :output
+                      :external-format :utf-8
+                      :if-does-not-exist :create :if-exists :supersede)
+ (with-open-file (index #p"/space/1G/serg/MAG-enru-pharm-index.txt")
+  (loop
+   initially
+   (format urls "def get_mag_urls():~%")
+   (format urls "    urls = {}~%")
+   for line = (read-line index nil nil)
+   for line-number from 0
+   while (and line) ; (< line-number 20))
+   do
+     (with-input-from-string (s line)
+       (let ((id (read s nil))
+             (file-index (read s nil))
+             (offset (read s nil)))
+         (declare (ignore id))
+         (let* ((file-name (format nil "/space/1G/serg/expanded-aminer/mag/mag_papers_~D.txt" file-index))
+                (json (load-mag-record file-name offset nil)))
+           (format urls
+                   "    urls['~A'] = [~{'~A'~^, ~}]~%"
+                   (cdr (assoc :id json))
+                   (cdr (assoc :url json))))))
+     finally
+     (format urls "    return urls~%"))))

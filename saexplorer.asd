@@ -41,18 +41,20 @@
   :version "0.2"
   :author "serg@msu.ru"
   :depends-on ("cl-log"
+               "plump" "clss" ; HTML parsers
                "cl-containers"
                "cl-utilities" "alexandria" "rutils" "cl-singleton-mixin"
                "optima" ; pattern matching
-               "drakma" "do-urlencode" "html-entities"
+               "drakma" "dexador" "do-urlencode" "html-entities"
                "cl-json" "cxml" "cxml-stp" "xuriella" ; data formats
                "cl-dbi" "dbd-sqlite3" "md5" "mito" ; database access
                "bordeaux-threads" "usocket" "hunchentoot" "clack" "quri" ; web server
                "hunchensocket" "websocket-driver"; websockets
                "fare-memoization" "cl-redis" ; caching
+               "rss" ; RSS parser
                "esrap"
                ; "closure-html"
-               "py-configparser")
+               "py-configparser" "unix-opts")
   :pathname "src"
   :serial t
   :components ((:file "package")
@@ -61,13 +63,16 @@
                ;; useful tools
                (:module utils
                         :components
-                        ((:file "logging")
+                        ((:file "package")
+                         (:file "logging")
                          (:file "parsing")
                          (:module jsonpath
                                   :components
                                   ((:file "parser")
                                    (:file "jsonpath")))
                          (:file "cache")
+                         (:file "fetch")
+                         (:file "rss")
                          (:file "sequences")
                          (:file "keywords")))
                (:module models
@@ -87,6 +92,21 @@
                          (:file "springer")
                          (:file "aminer")
                          (:file "dblp")))
+               (:module extraction
+                        :components
+                        ((:file "package")
+                         (:file "dates")))
+               (:module cfp
+                        :components
+                        ((:file "package")
+                         (:file "structure")
+                         (:file "collect")
+                         (:module spiders
+                                  :components
+                                  ((:file "omicsonline.org")
+                                   (:file "drugs.com")
+                                   (:file "elsevier")
+                                   (:file "wikicfp")))))
                (:file "keywords")
                (:file "conferences")
                (:file "explorer")

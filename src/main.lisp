@@ -38,6 +38,7 @@
                                             (pathname dbf)
                                             (when relativep home)))))
        (setf *dbcon* (dbi:connect :sqlite3 :database-name complete-dbf))
+       (setf mito:*connection* *dbcon*)
        *dbcon*))))
 
 (defun shutdown ()
@@ -45,11 +46,15 @@
   (redis:disconnect))
 
 
-(defun main ()
+(defun init ()
+  "Initilize environment."
   (setup-logging)
-  (redis:connect)
   (log-message :info "Starting")
   (load-config #p"local.cfg")
+  (connect-database))
+
+(defun main ()
+  (init)
   (log-message :info "Using cache database ~A" (get-option saexplorer.sys::*config* "Cache" "type"))
   (server:start-server :port (get-option saexplorer.sys::*config* "Server" "port" 8135 :type :number))
   (log-message :info "Visit http://localhost:8135/index.html"))
