@@ -47,6 +47,12 @@
    (year :col-type (or :integer :null)
          :initarg :year
          :accessor conf-year)
+   (dates :col-type (or (:varchar 512) :null)
+        :initarg :dates
+        :accessor conf-dates)
+   (location :col-type (or (:varchar 512) :null)
+        :initarg :location
+        :accessor conf-location)
    (conftype :col-type (or <conf-type> :null)
              :initarg :conftype
              :accessor conf-conftype)
@@ -54,10 +60,10 @@
         :initarg :url
         :accessor conf-url)
    (source :col-type (:varchar 512)
-           :initarg :url
+           :initarg :source
            :accessor cfp-source)
    (source-url :col-type (:varchar 512)
-               :initarg :url
+               :initarg :source-url
                :accessor cfp-source-url))
   (:metaclass mito:dao-table-class)
   (:table-name "cfp")

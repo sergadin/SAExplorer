@@ -53,7 +53,7 @@
     (dolist (item (rss:items rss-channel))
       (push (make-cfp-reference-info
              :name (parse-title item)
-             ;; :location (parse-location item)
+             :location (parse-location item)
              :acronym (parse-acronym item)
              :dates (parse-dates item)
              :url (rss:link item))

@@ -38,6 +38,8 @@ name, dates, url and information about reference location."
                    :name (cfp-name cfp)
                    ;; :conftype conftype
                    :url (cfp-url cfp)
+                   :location (cfp-location cfp)
+                   :dates (cfp-dates cfp)
                    :source source))
 
 (defun new-call-for-papers-p (cfp source)
@@ -50,13 +52,18 @@ name, dates, url and information about reference location."
 (defun collect (&optional source-name)
   "Collect new call for papers. If NAME is provided, collect from the specified source only."
   (if source-name
-      (let ((spider (gethash source-name *cfp-spiders*)))
-        (when spider
-          (log-message :trace "Collecting CFP from ~A" source-name)
-          (dolist (cfp (cfp-collect spider))
-            (if (new-call-for-papers-p cfp source-name)
-                (create-cfp (cfp-explain spider cfp) source-name)
-                (log-message :info "Old conference: ~A" (cfp-name cfp))))))
+      (alexandria:when-let
+          ((spider (gethash source-name *cfp-spiders*))
+           (new-cfp-count 1)
+           (cfp-count 1))
+        (log-message :trace "Collecting CFP from ~A" source-name)
+        (dolist (cfp (cfp-collect spider))
+          (incf cfp-count)
+          (when (new-call-for-papers-p cfp source-name)
+            (incf new-cfp-count)
+            (create-cfp (cfp-explain spider cfp) source-name)))
+        (log-message :info "~D CFP added out of ~D." (1- new-cfp-count) (1- cfp-count)))
+      ;; no source name specified, iterate over all registered spiders
       (maphash #'(lambda (name spider)
                    (declare (ignore spider))
                    (collect name))
