@@ -62,7 +62,7 @@
    (source :col-type (:varchar 512)
            :initarg :source
            :accessor cfp-source)
-   (source-url :col-type (:varchar 512)
+   (source-url :col-type (or (:varchar 512) :null)
                :initarg :source-url
                :accessor cfp-source-url))
   (:metaclass mito:dao-table-class)

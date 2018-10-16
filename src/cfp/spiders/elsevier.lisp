@@ -28,7 +28,6 @@
     (string-trim " " dates)))
 
 (defun parse-location (rss-item)
-  (print (rss:description rss-item))
   (ppcre:register-groups-bind (dates location)
       ("([^,]*),\\W+(.*)" (rss:description rss-item))
     (declare (ignore dates))
