@@ -6,6 +6,7 @@
   (:use :cl)
   (:export #:<bibdb> #:<entity>
            #:<conf-type> #:<conf-info>
+           #:<cfp-page>
 
            ;; constants
            #:+entity-cat-conference+

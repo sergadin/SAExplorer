@@ -13,14 +13,28 @@
          :initform (error "Must supply cfp-spider name.")
          :documentation "Spiders are distinguished by names, unique short lables of CFP sources.")))
 
-(defstruct (cfp-reference-info (:conc-name cfp-))
-  "Description of Call for Papers page reference, including conference
-name, dates, url and information about reference location."
-  name acronym year dates location url source source-url)
+
+(defun make-cfp-reference-info (&key name acronym year dates deadline location url source source-url)
+  (make-instance
+   'saexplorer.models:<cfp-page>
+   :name name
+   :acronym acronym
+   :year year
+   :dates dates
+   :deadline deadline
+   :location location
+   :url url
+   :source source
+   :source-url source-url))
 
 
 (defgeneric cfp-collect (spider)
-  (:documentation "Collect CFP references using SPIDER."))
+  (:documentation "Collect CFP references using SPIDER.
+
+This method should return a list of `saexplorer.models:<cfp-page>'
+objects. Such object may be created by `make-cfp-reference-info'
+helper function.
+"))
 
 (defgeneric cfp-explain (spider cfp)
   (:documentation "Provide more information about specified cfp.")
@@ -32,15 +46,10 @@ name, dates, url and information about reference location."
 (defun register-spider (spider)
   (setf (gethash (cfp-spider-name spider) *cfp-spiders*) spider))
 
-
 (defun create-cfp (cfp source)
-  (mito:create-dao '<cfp-page>
-                   :name (cfp-name cfp)
-                   ;; :conftype conftype
-                   :url (cfp-url cfp)
-                   :location (cfp-location cfp)
-                   :dates (cfp-dates cfp)
-                   :source source))
+  (setf (cfp-source cfp) source)
+  (mito:insert-dao cfp))
+
 
 (defun new-call-for-papers-p (cfp source)
   "Check that the CFP was not collected from this source."

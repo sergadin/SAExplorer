@@ -23,7 +23,7 @@
                              :method :get
                              :proxy proxy
                              :proxy-basic-authorization proxy-auth
-                             :external-format-in :utf-8
+                             ;; :external-format-in :utf-8
                              :external-format-out :utf-8)
       (when (= status-code +http-ok+)
         ;; Decode content into string, if needed

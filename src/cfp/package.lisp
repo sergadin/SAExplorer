@@ -6,6 +6,7 @@
   (:import-from :cl-log
                 #:log-message)
   (:import-from :saexplorer.models
-                #:<cfp-page>)
+                #:<cfp-page>
+                #:cfp-name #:cfp-source)
   (:export #:collect
            #:<cfp-info>))
