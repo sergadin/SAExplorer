@@ -17,12 +17,12 @@
   ()
   (:default-initargs :name "acm"))
 
-(defconstant +conference-events-url+ "https://www.acm.org/conferences/conference-events?view0=month&startDate0=~A-~2,'0d-~2,'0d")
-(defconstant +non-acm-events-url+ "https://www.acm.org/conferences/non-acm-events?view0=month&startDate0=~A-~2,'0d-~2,'0d")
+(alexandria:define-constant +conference-events-url+ "https://www.acm.org/conferences/conference-events?view0=month&startDate0=~A-~2,'0d-~2,'0d")
+(alexandria:define-constant +non-acm-events-url+ "https://www.acm.org/conferences/non-acm-events?view0=month&startDate0=~A-~2,'0d-~2,'0d")
 (defconstant +year+ 2019)
 
 (defmethod cfp-collect ((spider <acm>))
-  (let* ((conferences-data (make-hash-table :test 'equal)))
+  (let ((conferences-data (make-hash-table :test 'equal)))
     (dolist (url-template (list +conference-events-url+ +non-acm-events-url+))
       (dolist (month '(1 2 3 4 5 6 7 8 9 10 11 12))
         (let* ((url (format nil url-template +year+ month 1))
