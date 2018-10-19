@@ -12,9 +12,11 @@
   ()
   (:default-initargs :name "wikicfp"))
 
-(defconstant +title-location-dates-regex+
+(alexandria:define-constant
+    +title-location-dates-regex+
   "(.*?)\\W+\\[(.*?)\\]\\W*\\[(.*?)\\]"
-  "Regex to extract title, location and dates from WikiCFP RSS description field")
+  :test #'string=
+  :documentation "Regex to extract title, location and dates from WikiCFP RSS description field")
 
 (defun parse-location (rss-item)
   (ppcre:register-groups-bind (title location dates)
