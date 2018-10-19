@@ -109,6 +109,7 @@
                                    (:file "elsevier")
                                    (:file "dbworld")
                                    (:file "acm")
+                                   (:file "ams")
                                    (:file "wikicfp")))))
                (:file "keywords")
                (:file "conferences")
