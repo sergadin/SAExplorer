@@ -107,6 +107,7 @@
                                    (:file "drugs.com")
                                    (:file "elsevier")
                                    (:file "dbworld")
+                                   (:file "acm")
                                    (:file "wikicfp")))))
                (:file "keywords")
                (:file "conferences")
