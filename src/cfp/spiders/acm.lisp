@@ -17,8 +17,8 @@
   ()
   (:default-initargs :name "acm"))
 
-(alexandria:define-constant +conference-events-url+ "https://www.acm.org/conferences/conference-events?view0=month&startDate0=~A-~2,'0d-~2,'0d")
-(alexandria:define-constant +non-acm-events-url+ "https://www.acm.org/conferences/non-acm-events?view0=month&startDate0=~A-~2,'0d-~2,'0d")
+(alexandria:define-constant +conference-events-url+ "https://www.acm.org/conferences/conference-events?view0=month&startDate0=~A-~2,'0d-~2,'0d" :test #'string=)
+(alexandria:define-constant +non-acm-events-url+ "https://www.acm.org/conferences/non-acm-events?view0=month&startDate0=~A-~2,'0d-~2,'0d" :test #'string=)
 (defconstant +year+ 2019)
 
 (defmethod cfp-collect ((spider <acm>))
