@@ -106,6 +106,7 @@
                                   ((:file "omicsonline.org")
                                    (:file "drugs.com")
                                    (:file "elsevier")
+                                   (:file "acm")
                                    (:file "wikicfp")))))
                (:file "keywords")
                (:file "conferences")
