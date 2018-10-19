@@ -47,7 +47,10 @@
 
 (defmethod cfp-collect ((spider <doctors-review>))
   (loop
-     :with minimal-year = 2018 :and minimal-month = 12 :and minimal-day = 1
+     :with today = (local-time:today)
+     :with minimal-year = (local-time:timestamp-year today)
+     :and minimal-month = (local-time:timestamp-month today)
+     :and minimal-day = (local-time:timestamp-day today)
      :for page-number :from 1
      :for url = (format nil +url+ page-number minimal-year minimal-month minimal-day)
      :for doc-root = (plump:parse (sa-utils:fetch-url url))
