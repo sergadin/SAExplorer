@@ -41,9 +41,9 @@
 
 (defun tripletp (x)
   "Checks that X is a triplet of the form (`query-operator' `field-name' non-nil-value)"
-  (and ((not (null (third x)))
-        (typep (first x) query-operator)
-        (typep (second x) field-name))))
+  (and (not (null (third x)))
+       (typep (first x) query-operator)
+       (typep (second x) field-name)))
 
 (deftype query-atom ()
   "A constraint on single searchable field."
