@@ -105,6 +105,7 @@
                                   :components
                                   ((:file "omicsonline.org")
                                    (:file "drugs.com")
+                                   (:file "doctors-review")
                                    (:file "elsevier")
                                    (:file "dbworld")
                                    (:file "acm")
