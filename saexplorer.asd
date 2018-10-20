@@ -110,6 +110,7 @@
                                    (:file "dbworld")
                                    (:file "acm")
                                    (:file "ams")
+                                   (:file "mathmeetings")
                                    (:file "wikicfp")))))
                (:file "keywords")
                (:file "conferences")
