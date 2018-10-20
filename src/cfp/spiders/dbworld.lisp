@@ -20,6 +20,7 @@
   (:default-initargs :name "dbworld"))
 
 
+(defconstant +message-type-col+ 2 "Manually assigned type of the message.")
 (defconstant +title-col+ 4 "Position of message title, presumably, a conference name.")
 (defconstant +deadline-col+ 5 "Position of the deadline.")
 (defconstant +url-col+ 6 "Position of the external link.")
@@ -48,13 +49,17 @@
      :and source-url = (get-td cfp +title-col+ "a[href]")
      :and url-node = (get-td cfp +url-col+ "a[href]")
      :and deadline-td  = (get-td cfp +deadline-col+)
-     :when (and deadline-td url-node)
+     :and message-type-td = (get-td cfp +message-type-col+)
+     :when (and deadline-td url-node message-type-td
+                (not (null (search "conf. ann."
+                                   (string-downcase (plump:text message-type-td))))))
      :collect
      (make-cfp-reference-info
       :name (plump:text title-td)
       :deadline (when deadline-td (plump:text deadline-td))
       :source-url (when source-url (plump:attribute source-url "href"))
       :url (plump:attribute url-node "href"))))
+  nil)
 
 
 (eval-when (:load-toplevel)
