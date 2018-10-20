@@ -211,30 +211,30 @@
 
 ;; (es-index-create *es-index* 1 0)
 
-
-(with-open-file (urls #p"mag-urls.py"
-                      :direction :output
-                      :external-format :utf-8
-                      :if-does-not-exist :create :if-exists :supersede)
- (with-open-file (index #p"/space/1G/serg/MAG-enru-pharm-index.txt")
-  (loop
-   initially
-   (format urls "def get_mag_urls():~%")
-   (format urls "    urls = {}~%")
-   for line = (read-line index nil nil)
-   for line-number from 0
-   while (and line) ; (< line-number 20))
-   do
-     (with-input-from-string (s line)
-       (let ((id (read s nil))
-             (file-index (read s nil))
-             (offset (read s nil)))
-         (declare (ignore id))
-         (let* ((file-name (format nil "/space/1G/serg/expanded-aminer/mag/mag_papers_~D.txt" file-index))
-                (json (load-mag-record file-name offset nil)))
-           (format urls
-                   "    urls['~A'] = [~{'~A'~^, ~}]~%"
-                   (cdr (assoc :id json))
-                   (cdr (assoc :url json))))))
-     finally
-     (format urls "    return urls~%"))))
+(defun generate-mag-id-to-urls ()
+  (with-open-file (urls #p"mag-urls.py"
+                        :direction :output
+                        :external-format :utf-8
+                        :if-does-not-exist :create :if-exists :supersede)
+    (with-open-file (index #p"/space/1G/serg/MAG-enru-pharm-index.txt")
+      (loop
+         initially
+           (format urls "def get_mag_urls():~%")
+           (format urls "    urls = {}~%")
+         for line = (read-line index nil nil)
+         for line-number from 0
+         while (and line) ; (< line-number 20))
+         do
+           (with-input-from-string (s line)
+             (let ((id (read s nil))
+                   (file-index (read s nil))
+                   (offset (read s nil)))
+               (declare (ignore id))
+               (let* ((file-name (format nil "/space/1G/serg/expanded-aminer/mag/mag_papers_~D.txt" file-index))
+                      (json (load-mag-record file-name offset nil)))
+                 (format urls
+                         "    urls['~A'] = [~{'~A'~^, ~}]~%"
+                         (cdr (assoc :id json))
+                         (cdr (assoc :url json))))))
+         finally
+           (format urls "    return urls~%")))))
