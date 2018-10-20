@@ -58,7 +58,7 @@
       :name (plump:text title-td)
       :deadline (when deadline-td (plump:text deadline-td))
       :source-url (when source-url (plump:attribute source-url "href"))
-      :url (plump:attribute url-node "href"))))
+      :url (plump:attribute url-node "href")))
   nil)
 
 
