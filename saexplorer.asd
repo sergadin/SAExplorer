@@ -111,6 +111,7 @@
                                    (:file "acm")
                                    (:file "ams")
                                    (:file "mathmeetings")
+                                   (:file "chemistryconferences")
                                    (:file "wikicfp")))))
                (:file "keywords")
                (:file "conferences")
