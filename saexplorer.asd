@@ -101,12 +101,14 @@
                         ((:file "package")
                          (:file "structure")
                          (:file "collect")
+                         (:file "spider-utils")
                          (:module spiders
                                   :components
                                   ((:file "omicsonline.org")
                                    (:file "drugs.com")
                                    (:file "doctors-review")
                                    (:file "elsevier")
+                                   (:file "science-community")
                                    (:file "dbworld")
                                    (:file "acm")
                                    (:file "ams")
