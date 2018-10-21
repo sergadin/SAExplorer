@@ -114,6 +114,7 @@
                                    (:file "ams")
                                    (:file "mathmeetings")
                                    (:file "chemistryconferences")
+                                   (:file "paperleap")
                                    (:file "wikicfp")))))
                (:file "keywords")
                (:file "conferences")
