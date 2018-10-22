@@ -56,12 +56,11 @@
      :when (and title-a dates)
      :collect
      (saexplorer.cfp::make-cfp-reference-info
-      :name (print (string-trim '(#\Space #\Newline #\Tab) (plump:text title-a)))
+      :name (string-trim '(#\Space #\Newline #\Tab) (plump:text title-a))
       :source-url (absolute-url (plump:attribute title-a "href"))
       :dates (plump:text dates)
       :location (when location-node (plump:text location-node))
-      :deadline (when deadline (plump:text deadline))))
-  nil)
+      :deadline (when deadline (plump:text deadline)))))
 
 (defmethod spider-utils::next-url ((depaginator <depaginator>) doc-root)
   (safe-first (clss:select "ul[class~=\"pager\"] li[class~=\"pager-next\"]" doc-root)))
