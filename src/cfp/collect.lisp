@@ -29,7 +29,7 @@
 
 
 (defgeneric cfp-collect (spider)
-  (:documentation "Collect CFP references using SPIDER.
+  (:documentation "Collect presumably new CFP references using SPIDER.
 
 This method should return a list of `saexplorer.models:<cfp-page>'
 objects. Such object may be created by `make-cfp-reference-info'
@@ -41,6 +41,12 @@ helper function.
   (:method ((spider t) cfp)
     (declare (ignore spider))
     cfp))
+
+(defgeneric cfp-rescan (spider)
+  (:documntation "Perform complete rescan of the resource.")
+  (:method ((spider <cfp-spider>))
+    "By default, just call `cfp-collect'."
+    (cfp-collect spider)))
 
 
 (defun register-spider (spider)
