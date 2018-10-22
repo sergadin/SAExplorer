@@ -43,7 +43,7 @@ helper function.
     cfp))
 
 (defgeneric cfp-rescan (spider)
-  (:documntation "Perform complete rescan of the resource.")
+  (:documentation "Perform complete rescan of the resource.")
   (:method ((spider <cfp-spider>))
     "By default, just call `cfp-collect'."
     (cfp-collect spider)))
