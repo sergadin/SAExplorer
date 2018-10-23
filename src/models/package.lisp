@@ -7,6 +7,7 @@
   (:export #:<bibdb> #:<entity>
            #:<conf-type> #:<conf-info>
            #:<cfp-page>
+           #:<cfp-spider-log>
 
            ;; constants
            #:+entity-cat-conference+

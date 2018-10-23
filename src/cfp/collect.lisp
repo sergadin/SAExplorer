@@ -63,21 +63,35 @@ helper function.
        (null (mito:find-dao '<cfp-page>
                             :name (cfp-name cfp)))))
 
+(defun make-log-record (source-name)
+  (make-instance
+   'models::<cfp-spider-log>
+   :source source-name
+   :start (get-universal-time)))
+
 
 (defun collect (&optional source-name)
   "Collect new call for papers. If NAME is provided, collect from the specified source only."
   (if source-name
-      (alexandria:when-let
+      (alexandria:when-let*
           ((spider (gethash source-name *cfp-spiders*))
            (new-cfp-count 1)
-           (cfp-count 1))
+           (cfp-count 1)
+           (log-record (make-log-record source-name)))
+        (mito:save-dao log-record)
         (log-message :trace "Collecting CFP from ~A" source-name)
         (dolist (cfp (cfp-collect spider))
           (incf cfp-count)
           (when (new-call-for-papers-p cfp source-name)
             (incf new-cfp-count)
             (create-cfp (cfp-explain spider cfp) source-name)))
-        (log-message :info "~D CFP added out of ~D." (1- new-cfp-count) (1- cfp-count)))
+        (decf new-cfp-count)
+        (decf cfp-count)
+        (setf (models::cfp-splog-enddate log-record) (get-universal-time)
+              (models::cfp-splog-processed log-record) cfp-count
+              (models::cfp-splog-saved log-record) new-cfp-count)
+        (mito:save-dao log-record)
+        (log-message :info "~D CFP added out of ~D." new-cfp-count cfp-count))
       ;; no source name specified, iterate over all registered spiders
       (maphash #'(lambda (name spider)
                    (declare (ignore spider))

@@ -74,3 +74,24 @@
   (:documentation "Description of Call for Papers page. Includes
 conference name, dates, url, and information about reference
 location."))
+
+
+(defclass <cfp-spider-log> (<model>)
+  ((source :col-type (:varchar 512)
+           :iniarg :source
+           :accessor cfp-source)
+   (start :col-type :timestamp
+          :initarg :start
+          :accessor cfp-splog-startdate)
+   (end :col-type (or :timestamp :null)
+        :initarg :end
+        :accessor cfp-splog-enddate)
+   (processed :col-type (or :integer :null)
+              :initarg :processed
+              :accessor cfp-splog-processed)
+   (saved :col-type (or :integer :null)
+          :intarg :saved
+          :accessor cfp-splog-saved))
+  (:metaclass mito:dao-table-class)
+  (:table-name "cfpsplog")
+  (:documentation "Logging of CFP spider activities."))
