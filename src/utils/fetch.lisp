@@ -6,7 +6,7 @@
 (defconstant +default-proxy-port+ 3128)
 
 
-(defun fetch-url (url &key use-proxy (method :get) parameters)
+(defun fetch-url (url &key use-proxy (method :get) parameters headers)
   "Return content located at the specified URL."
   (log-message :trace "Downloading: ~A" url)
   (let ((proxy
@@ -22,6 +22,7 @@
         (drakma:http-request url
                              :method method
                              :parameters parameters
+                             :additional-headers headers
                              :proxy proxy
                              :proxy-basic-authorization proxy-auth
                              ;; :external-format-in :utf-8
