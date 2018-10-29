@@ -2,3 +2,27 @@ local.cfg
 test-result*/
 lift.dribble
 **/local*
+
+# cactus pages
+frontend/**/.build
+frontend/**/.deploy
+frontend/**/config.json
+
+## Python
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Scrapy stuff:
+.scrapy
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+

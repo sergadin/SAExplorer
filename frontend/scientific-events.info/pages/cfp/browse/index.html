@@ -1,0 +1,84 @@
+{% extends "cfp.html" %}
+
+{% block main_content %}
+
+<script>
+  $(document).ready(function() {
+  $('#cfpTable').DataTable({
+  "paging":   true,
+  "info":     false,
+  "ajax":     'http://my.scientific-events.info/cfp/',
+  "columns": [
+        { data: "quartile",
+          render: function(data, type, row, meta) {
+            var classes = {
+                1: "badge-success",
+                2: "badge-warning",
+                3: "badge-danger",
+                4: "badge-danger",
+            };
+            var cls = classes[data]
+            return `<span class="badge ${cls}">Q${data}</span>`
+          }
+        },
+        { data: "year" },
+        { data: "dates" },
+        { data: "name",
+          render: function(data, type, row, meta) {
+            return `<a href="${row.url}">${data}</a>`;
+          }
+        },
+        { data: "location" },
+        { data: "deadline" }
+    ],
+  "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]]
+  });
+  } );
+</script>
+
+
+<ul class="nav nav-tabs">
+  <li class="nav-item">
+    <a class="nav-link active" href="#">Events</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="#">Topics</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="#">Institutions</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link disabled" href="#">Disabled</a>
+  </li>
+</ul>
+
+<p>
+      <table class="table table-striped" id="cfpTable">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Год</th>
+            <th>Даты</th>
+            <th>Название</th>
+            <th>Страна</th>
+            <th>Срок подачи статьи</th>
+          </tr>
+        </thead>
+
+        <tbody>
+<!--
+          <tr>
+            <td><span class="badge badge-warning">Q2</span> </td>
+            <td>2018</td>
+            <td>10-14 сентября</td>
+            <td><a href="http://dlt2018.uec.ac.jp/">Developments in Language Theory</a></td>
+            <td>Япония, Токио</td>
+            <td>30 апреля 2018</td>
+          </tr>
+-->
+        </tbody>
+      </table>
+
+</p>
+
+{% endblock %}

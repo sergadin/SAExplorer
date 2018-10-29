@@ -1,0 +1,20 @@
+{
+    "aws-access-key": "XXX",
+    "aws-bucket-name": "XXX",
+    "aws-bucket-website": "XXX",
+    "blog": {
+        "author": "Unknown",
+        "date-format": "%d-%m-%Y",
+        "path": "posts"
+    },
+    "disabled.optimize": [
+        "js",
+        "css"
+    ],
+    "fingerprint": [
+        "js",
+        "css"
+    ],
+    "prettify": true,
+    "site-url": "http://scientific-events.info"
+}
