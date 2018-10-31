@@ -33,6 +33,9 @@
         <script src="{% static '/static/js/vendor/modernizr-2.6.2.js' %}"></script>
         <script src="https://sdk.amazonaws.com/js/aws-sdk-2.7.16.min.js"></script>
 
+        {% block extrajs %}
+        {% endblock %}
+
         {% block extracss %}
         {% endblock %}
   </head>
@@ -85,7 +88,7 @@
       <span class="text-muted text-right">
         &copy;&nbsp;2018
       </span>
-    </div>
+    </nav>
 
     {% endblock footer %}
 

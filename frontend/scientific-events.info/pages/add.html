@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block extrajs %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+<script>
+"use strict";
+
+$(function () {
+  $.getJSON("{% static '/static/data/countries.json' %}", function (data, textStatus) {
+    $("#country-select").select2({
+      data: data.results,
+      minimumInputLength: 2,
+      theme: "bootstrap4",
+      width: "100%",  // responsive
+    });
+  });
+
+  $("#topics-select").select2({
+    placeholder: $("#topics-select").attr("placeholder"),
+    tags: true,
+    theme: "bootstrap4",
+    width: "100%",
+  });
+});
+</script>
+{% endblock %}
+
+{% block extracss %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css">
+<link rel="stylesheet" href="{% static '/static/css/select2-bootstrap4.min.css' %}">
+{% endblock %}
+
+{% block body %}
+<main class="container">
+  <h2>Enter conference data</h2>
+  <form>
+    <fieldset>
+      <legend>Basic information about conference</legend>
+      <div class="form-row">
+        <div class="form-group col-sm-8">
+          <label for="name-input">Full conference name</label>
+          <input class="form-control" id="name-input" placeholder="Abstract Base Conference 2018">
+        </div>
+        <div class="form-group col-sm-4">
+          <label for="shortname-input">Short name</label>
+          <input class="form-control" id="shortname-input" placeholder="ABC-2018">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group col-sm-4">
+          <label for="country-select">Country select</label>
+          <select class="form-control" id="country-select">
+          </select>
+        </div>
+        <div class="form-group col-sm-4">
+          <label for="city-input">City</label>
+          <input class="form-control" id="city-input" placeholder="Newcastle">
+        </div>
+        <div class="form-group col-sm-4">
+          <label for="location-input">Location</label>
+          <input class="form-control" id="location-input" placeholder="Jesmond Road West, Philip Robinson Library">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group col-sm-4">
+          <label for="startdate-input">Start date</label>
+          <input type="date" class="form-control" id="startdate-input">
+        </div>
+        <div class="form-group col-sm-4">
+          <label for="enddate-input">End date</label>
+          <input type="date" class="form-control" id="enddate-input">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group col-sm-8">
+          <label for="url-input">URL</label>
+          <input type="url" class="form-control" id="url-input" placeholder="https://example.com/abc/2018">
+        </div>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Conference topics</legend>
+      <div class="form-group">
+        <!-- <label for="topics-select">Enter conference topics</label> -->
+        <select multiple class="form-control" id="topics-select" placeholder="Separate topics using Return key">
+        </select>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Important dates</legend>
+      <div class="form-row">
+        <div class="form-group col-sm-4">
+          <label for="paper-deadline-input">Paper submission deadline</label>
+          <input type="date" class="form-control" id="paper-deadline-input">
+        </div>
+        <div class="form-group col-sm-4">
+          <label for="acceptance-notification-input">Acceptance notification</label>
+          <input type="date" class="form-control" id="acceptance-notification-input">
+        </div>
+        <div class="form-group col-sm-4">
+          <label for="registration-input">Registration opens</label>
+          <input type="date" class="form-control" id="registration-input">
+        </div>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Invited speakers</legend>
+      <div class="form-group">
+        <!-- <label for="invited-speakers-textarea">Notable invited speakers</label> -->
+        <textarea class="form-control" id="invited-speakers-textarea" rows="3" aria-describedby="invited-speakers-help"></textarea>
+        <span id="invited-speakers-help" class="form-text text-muted">
+          Please put one talk per line, and follow “Speaker Name: talk title” format if possible.
+        </span>
+      </div>
+    </fieldset>
+    <button type="submit" class="btn btn-primary">Proceed adding the conference</button>
+  </form>
+</main>
+{% endblock %}
