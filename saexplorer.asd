@@ -117,6 +117,7 @@
                                    (:file "paperleap")
                                    (:file "papercrowd")
                                    (:file "ieee")
+                                   (:file "aconf")
                                    (:file "wikicfp")))))
                (:file "keywords")
                (:file "conferences")
