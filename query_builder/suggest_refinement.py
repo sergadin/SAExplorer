@@ -90,12 +90,14 @@ def word_closest(pos_words, neg_words, topn):
 
 
 def word_to_clusters(pos_words, neg_words, topn):
-    #обработка слова
+    # обработка слова
     logging.info(f"{pos_words}")
     logging.info(f"{neg_words}")
     sim_tokens = word_closest(pos_words, neg_words, topn)
     logging.error(f"{sim_tokens}")
-    #кластеризация
+    # кластеризация
+    # Заполняем кэш векторов модели word2vec.
+    tayga_api.get_vector(sim_tokens)
     dist, token_to_num = make_distancer(sim_tokens)
     data_points = [np.array([token_to_num[t], seq], dtype=np.float64)
                    for seq, t in enumerate(sim_tokens)]
@@ -103,7 +105,7 @@ def word_to_clusters(pos_words, neg_words, topn):
     # for seq,  t in enumerate(sim_tokens):
         # print(t, np.array([token_to_num[t], seq], dtype=np.float64))
     logging.info("word_to_clusters: Начало работы DBSCAN.")
-    clustering = DBSCAN(eps=0.35, metric=dist, min_samples=2).fit(data_points)
+    clustering = DBSCAN(eps=0.4, metric=dist, min_samples=2).fit(data_points)
     logging.info("word_to_clusters: Конец работы DBSCAN.")
 
     #вывод
@@ -126,7 +128,7 @@ def average_from_clusters(clusters) -> List[Representative]:
     cl_word = ""
     for key in clusters:
         if key == -1:
-            continue
+            pass # continue
         s = 0
         for i in range(1, len(clusters[key])):
             s += 1 - np.dot(tayga_api.get_vector(clusters[key][0]),
@@ -156,7 +158,7 @@ def word_nearest(pos_terms, neg_terms) -> List[Nearest_word]:
     clusters = word_to_clusters(
         [term_to_key(term) for term in pos_terms], 
         [term_to_key(term) for term in neg_terms],
-        topn=10)
+        topn=15)
     # print(clusters)
     representatives = average_from_clusters(clusters)
     # sim_list = tayga_api.most_similar(

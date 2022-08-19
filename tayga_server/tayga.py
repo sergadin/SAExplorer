@@ -11,7 +11,7 @@ from pymystem3 import Mystem
 from gensim.models import KeyedVectors
 import gensim
 import pymorphy2
-
+import time
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
@@ -21,25 +21,28 @@ model = gensim.models.KeyedVectors.load_word2vec_format(
 morph = pymorphy2.MorphAnalyzer()
 
 
-@app.route('/get_vector/', methods=['POST'])
+@app.route('/get_vectors/', methods=['POST'])
 def get_vector():
+    start = time.perf_counter()
     query = json.loads(request.data)
-    word = query.get("word")
-    if word is None:
-        print("Пустой запрос в функции get_vector.")
-        return jsonify({})
-    try:
-        vector = model[word].tolist()
-        return jsonify({"vector": vector})
-    except Exception as e:
-        print(e)
-        print(f'Ошибка при обработке слова "{word}".')
-    return jsonify({})
+    words = query.get("words")
+    print("Запрос получен", time.perf_counter() - start)
+    vectors = []
+    for word in words:
+        try:
+            vector = model[word].tolist()
+            vectors.append(vector)
+        except Exception as e:
+            print(e)
+            print(f'Ошибка при обработке слов "{word}".')
+            vectors.append([])
+    return jsonify({"vectors": vectors})
 # TODO Сделать возвращение статуса или как-то еще передавать сообщения об ошибке на сторону клиента. 
 
 
 @app.route('/most_similar/', methods=['POST'])
 def most_similar():
+    start = time.perf_counter()
     query = json.loads(request.data)
     
     def key_for_tayga(word: str):
@@ -72,7 +75,10 @@ def most_similar():
     except Exception:
         traceback.print_exc(file=sys.stdout)
         sim_list = []
-    return jsonify(sim_list)
+    print("Запрос обработан.", time.perf_counter() - start)
+    j = jsonify(sim_list)
+    print("Запрос закодирован.", time.perf_counter() - start)
+    return j
 
 
 if __name__ == "__main__":

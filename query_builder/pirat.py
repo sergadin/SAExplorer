@@ -12,7 +12,7 @@ from matplotlib.pyplot import title
 from matplotlib.style import context
 from suggest_refinement import suggest
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///dict.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///local/dict.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -214,6 +214,6 @@ def undo_version(version_id):
 if __name__ == "__main__":
     FORMAT = '%(asctime)s %(message)s'
     logging.basicConfig(format=FORMAT,
-                        filename="pirat.log", filemode="w", encoding='utf-8',
+                        filename="local/pirat.log", filemode="w", encoding='utf-8',
                         level=logging.INFO)
     app.run(debug=True)
