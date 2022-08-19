@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+  <head>
+    <title>This is the title of the webpage!</title>
+  </head>
+  <body>
+    <p>This is an example paragraph. Anything in the <strong>body</strong> tag will appear on the page, just like this <strong>p</strong> tag and its contents.</p>
+    
+    <div>
+      {{context.suggestions}}
+    </div>
+    <div>
+      <ul>
+      {% for word in context.suggestions %}
+      <li><a href="/click/{{word.id}}/">{{word.word}}</a></li>
+      {% endfor %}
+    </ul>
+  </div>
+  </body>
+</html>

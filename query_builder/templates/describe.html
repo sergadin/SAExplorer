@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}This is the title of the webpage!{% endblock %}
+{% block content %}
+    <p>{{ context.title }}</p>
+   
+    <div>
+      {% for term in context.last_version.terms %}
+      <button type="button" class="btn {{'btn-success' if term.positivity else 'btn-danger'}}">{{term.word}}</button>
+      {% endfor %}
+      <a href="/undo/{{context.last_version.id}}/" type="button"
+       class="btn btn-outline-secondary"> &nbsp;&larr;&nbsp;</a>
+  </div>
+
+    <div>
+      <ul class="list-group"> 
+      {% for word in context.last_version.rec.rec_words %}
+      <li class="list-group-item">
+        {{ word.word }}
+        <a href="/mark_positive/{{context.last_version.id}}/{{ word.id }}/" type="button" class="btn btn-outline-success">Да!</a>
+        <a href="/mark_negative/{{context.last_version.id}}/{{ word.id }}/" type="button" class="btn btn-outline-danger">Нет, спасибо!</a>
+          <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#cluster_content_{{word.id}}" aria-expanded="false" aria-controls="collapseExample">
+            ?
+          </button>
+        <div class="collapse" id="cluster_content_{{word.id}}">
+          <div class="card card-body">
+            {% for item in word.rec_words_cluster %}
+              {{ item.word }}
+            {% endfor %}
+          </div>
+        </div>
+
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+
+  {% endblock %}

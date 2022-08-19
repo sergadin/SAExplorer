@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}This is the title of the webpage!{% endblock %}
+{% block content %}
+<div>
+  <ul class="list-group"> 
+  {% for ad in context.old_descriptions %}
+  <li class="list-group-item"><a href="/show_rec/{{ad.id}}/">{{ ad.title }}</a></li>
+  {% endfor %}
+</ul>
+</div>
+
+
+
+ <form class="row" action="/new_query" method="POST">
+  <div class="mb-3">
+    <label for="title" class="form-label">Название области</label>
+    <input type="input" name="title" required class="form-control" id="title" placeholder="Пиратство на Волге">
+  </div>
+
+  <div class="mb-3">
+    <label for="word" class="form-label">Название поля</label>
+    <input type="input" name="word" required class="form-control" id="title" placeholder="Степан Разин">
+  </div>
+
+  <div class="col-auto">
+    <button type="submit" class="btn btn-primary mb-3">Построить</button>
+  </div>
+ </form>
+  {% endblock %}
