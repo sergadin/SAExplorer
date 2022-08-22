@@ -4,11 +4,19 @@ import logging
 from dataclasses import dataclass
 from typing import List
 import numpy as np
-
+import pymorphy2
 
 from sklearn.cluster import DBSCAN
 import tayga_api
 
+morph = pymorphy2.MorphAnalyzer()
+
+def isword(word: str):
+    p = morph.parse(word)[0]
+    POS = p.tag.POS
+    if POS is not None:
+        return True
+    return
 
 @dataclass
 class Nearest_word:
@@ -95,6 +103,12 @@ def word_to_clusters(pos_words, neg_words, topn):
     logging.info(f"{neg_words}")
     sim_tokens = word_closest(pos_words, neg_words, topn)
     logging.error(f"{sim_tokens}")
+    # очистка с помощью pymorphy
+    sim_tokens_copy = sim_tokens
+    for word in sim_tokens:
+        if isword(word):
+            sim_tokens_copy.add(word)
+    sim_tokens = sim_tokens_copy
     # кластеризация
     # Заполняем кэш векторов модели word2vec.
     tayga_api.get_vector(sim_tokens)
@@ -105,7 +119,7 @@ def word_to_clusters(pos_words, neg_words, topn):
     # for seq,  t in enumerate(sim_tokens):
         # print(t, np.array([token_to_num[t], seq], dtype=np.float64))
     logging.info("word_to_clusters: Начало работы DBSCAN.")
-    clustering = DBSCAN(eps=0.4, metric=dist, min_samples=2).fit(data_points)
+    clustering = DBSCAN(eps=0.35, metric=dist, min_samples=2).fit(data_points)
     logging.info("word_to_clusters: Конец работы DBSCAN.")
 
     #вывод
@@ -128,7 +142,7 @@ def average_from_clusters(clusters) -> List[Representative]:
     cl_word = ""
     for key in clusters:
         if key == -1:
-            pass # continue
+            continue
         s = 0
         for i in range(1, len(clusters[key])):
             s += 1 - np.dot(tayga_api.get_vector(clusters[key][0]),
