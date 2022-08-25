@@ -1,15 +1,15 @@
 from random import randrange
 import logging
 #import random
-from msilib.schema import Class
+# from msilib.schema import Class
 from flask import Flask
 from flask import render_template, redirect, url_for
 from flask import request
 from flask_sqlalchemy import SQLAlchemy
 # from sqlalchemy.orm import relationship
 # from sqlalchemy import Column, ForeignKey
-from matplotlib.pyplot import title
-from matplotlib.style import context
+# from matplotlib.pyplot import title
+# from matplotlib.style import context
 from suggest_refinement import suggest
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///local/dict.db'
