@@ -46,9 +46,21 @@ def most_similar():
     query = json.loads(request.data)
     
     def key_for_tayga(word: str):
+        pos_map = {
+            'INFN': "VERB"
+        }
+
+        def pos_priority(parse):
+            priority = ['NOUN', 'ADJF', 'VERB', 'ADVB', 'PRTF']
+            try:
+                return priority.index(pos_map.get(parse.tag.POS, parse.tag.POS)) + parse.score
+            except ValueError:
+                return len(priority) + 1  # Lowest possible priority.
+
         if word.find('_') >= 0:
             return word
-        p = morph.parse(word)[0]
+        p = morph.parse(word)
+        p = sorted(p, key=pos_priority)[0]
         return "{normal_form}_{POS}".format(normal_form=p.normal_form, POS=p.tag.POS)
 
     def to_keys(words):

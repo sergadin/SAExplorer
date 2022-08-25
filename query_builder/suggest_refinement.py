@@ -2,7 +2,7 @@
 from __future__ import annotations
 import logging
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 import numpy as np
 import pymorphy2
 
@@ -12,27 +12,47 @@ import tayga_api
 morph = pymorphy2.MorphAnalyzer()
 
 def isword(word: str):
-    p = morph.parse(word)[0]
-    POS = p.tag.POS
-    if POS is not None:
+    term = Term.from_string(word)
+    if term.pos_tag in ['PROPN']:
         return True
-    return
+    for p in morph.parse(term.word):
+        if(term.pos_tag == str(p.tag.POS) and 
+            type(p.methods_stack[0][0]) == pymorphy2.units.by_lookup.DictionaryAnalyzer):
+            return True
+    return False
+
+
+class Term:
+    def __init__(self, word: str, pos_tag = None) -> None:
+        self.word: str = word
+        self.pos_tag: Optional[str] = pos_tag
+
+    @staticmethod
+    def from_string(word_pos: str) -> Term:
+        parts = word_pos.split('_')
+        word = " ".join(parts[:-1])
+        pos_tag = parts[-1]
+        return Term(word=word, pos_tag=pos_tag)
 
 @dataclass
 class Nearest_word:
     """Слово из тайги с расстоянием."""
-    word: str
-    pos_tag: str
+    term: Term
     dist: float
     cluster: List[Nearest_word]
 
+    @property
+    def word(self):
+        return self.term.word
+    
+    @property
+    def pos_tag(self):
+        return self.term.pos_tag
 
     @staticmethod
     def from_string(word_pos: str, cluster: List[Nearest_word] = None) -> Nearest_word:
-        parts = word_pos.split('_')
-        word = " ".join(parts[:-1])
-        pos_tag = parts[-1]
-        return Nearest_word(word=word, pos_tag=pos_tag, dist=None, cluster=cluster)
+        term = Term.from_string(word_pos)
+        return Nearest_word(term=term, dist=None, cluster=cluster)
 
 class Suggestion:
     """Рекомендации из тайги."""
@@ -96,7 +116,7 @@ def word_closest(pos_words, neg_words, topn):
     # print(sim_tokens)
     return sim_tokens
 
-
+ 
 def word_to_clusters(pos_words, neg_words, topn):
     # обработка слова
     logging.info(f"{pos_words}")
@@ -104,8 +124,9 @@ def word_to_clusters(pos_words, neg_words, topn):
     sim_tokens = word_closest(pos_words, neg_words, topn)
     logging.error(f"{sim_tokens}")
     # очистка с помощью pymorphy
-    sim_tokens_copy = sim_tokens
+    sim_tokens_copy = set([])
     for word in sim_tokens:
+        print(word, isword(word))
         if isword(word):
             sim_tokens_copy.add(word)
     sim_tokens = sim_tokens_copy
