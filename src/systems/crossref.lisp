@@ -4,6 +4,8 @@
 (defpackage saexplorer.crossref
   (:nicknames :crossref)
   (:use :cl :saexplorer.bibsystem)
+  (:import-from :saexplorer
+                #:*dbcon*)
   (:import-from :cl-log
                 #:log-message))
 
@@ -34,6 +36,136 @@
         (cons "rows" (format nil "~D" chunk-size))
         (cons "offset" (format nil "~D" start))
         (cons "mailto" "serg@msu.ru")))
+
+;;;
+;;; Fetch works
+;;;
+
+(defun parse-json-result (octets)
+  (let ((response
+         (handler-bind ((json:no-char-for-code
+                         #'(lambda (c)
+                             (declare (ignore c))
+                             (invoke-restart 'json:substitute-char #\?))))
+           (json:decode-json-from-string
+            (flexi-streams:octets-to-string octets :external-format :utf-8)))))
+    response))
+;;  (let* ((response (json:decode-json-from-string
+;;                    (html-entities:decode-entities
+;;                     (flexi-streams:octets-to-string content :external-format :utf-8))))
+;;         (data (cdr (assoc :message response))))
+
+
+(defun fetch-works (&key (cursor "*"))
+  (multiple-value-bind (content status)
+      (drakma:http-request "https://api.crossref.org/types/proceedings-article/works"
+                           :accept "application/json"
+                           :parameters (list (cons "mailto" "serg@msu.ru")
+                                             (cons "rows" "10")
+                                             (cons "cursor" cursor)))
+    (when (/= status 200)
+      (error 'network-error :code status))
+    (let* ((response (parse-json-result content))
+           (data (cdr (assoc :message response))))
+      ;;(format t " FW: ~A~%     ~A~%" cursor (cdr (assoc :next-cursor data)))
+      data
+      (flexi-streams:octets-to-string content :external-format :utf-8))))
+
+(defun fetch-all-proceedings ()
+  (loop
+     :for cursor = "*" :then "*" ;(cdr (assoc :next-cursor data))
+     :for data = (fetch-works :cursor cursor)
+     :for k :from 0
+     :while (and (< k 1) data)
+     :do
+       (format t "~A: ~A~%" k cursor)
+       (with-open-file (f (format nil "f:\\crossref-new\\original-proc-~5,'0D.json" k)
+                          :if-does-not-exist :create
+                          :if-exists :supersede
+                          :direction :output)
+         (format f "~A" data)
+         (let ((result (jsown:parse data)))
+           ;;(format t "~A~%" result)
+           ;;(format t "~A~%" (assoc "message" (rest result) :test #'string=))
+           (format f "~&~A" (jsown:to-json (cdr (assoc "message" (rest result) :test #'string=)))))
+         #+(or)(json:encode-json data f))))
+
+
+(defun %date-parts-to-date (node)
+  "Converts crossref's date-parts field into date."
+  (when (= 3 (length (cadar node)))
+    (destructuring-bind (year month day)
+        (cadar node)
+      (format nil "~A-~A-~A" year month day))))
+
+(defun %parse-proceeding-article-record (item)
+  "Returns a tab separated string."
+  (let ((title (jsonpath:match item "$.title[0]"))
+        (authors (format nil "~{~A~^; ~}"
+                         (loop for au in (jsonpath:match item "$.author")
+                            collect (format nil "~A~@[, ~A~]"
+                                            (jsonpath:match au "$.family")
+                                            (jsonpath:match au "$.given")))))
+        (doi (jsonpath:match item "$.+DOI+"))
+        (type (jsonpath:match item "$.type"))
+        (deposited (%date-parts-to-date (jsonpath:match item "$.deposited")))
+        (event-name (jsonpath:match item "$.event.name"))
+        (event-start (%date-parts-to-date (jsonpath:match item "$.event.start")))
+        (event-end (%date-parts-to-date (jsonpath:match item "$.event.end")))
+        (publisher (jsonpath:match item "$.publisher")))
+    (format nil (format nil "~~{~~A~~^~C~~}" #\Tab)
+            (mapcar #'(lambda (s) (substitute #\Space #\Tab s))
+                    (list type title authors doi deposited event-name event-start event-end publisher)))))
+
+(defun process-proceedings ()
+  (let* ((na-sql (concatenate 'string
+                              "INSERT INTO article ("
+                              "f_article_type"
+                              ", f_article_title"
+                              ", f_article_authors"
+                              ", f_article_doi"
+                              ", f_article_deposited"
+                              ", f_article_eventname"
+                              ", f_article_eventstart"
+                              ", f_article_eventend"
+                              ", f_article_publisher) "
+                              "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"))
+         (new-article-query (dbi:prepare *dbcon* na-sql)))
+    (with-open-file (out "f:\\crossref\\all-conference-papers.tsv" :direction :output)
+      (dotimes (k 5654)
+        (log-message :trace "Processing file number ~A." k)
+        (with-open-file (f (format nil "f:\\crossref\\proc-~5,'0D.json" k)
+                           :direction :input)
+          (do* ((data (json:decode-json f))
+                (items (cdr (assoc :items data)) (cdr items))
+                (item (car items) (car items)))
+               ((null items))
+            (handler-case
+                (format out "~A~%" (%parse-proceeding-article-record item))
+              (T ()
+                (log-message :error "Unable to parse article record"))
+              #+(or)(dbi:execute new-article-query
+                      type title authors doi deposited event-name event-start event-end publisher))))))))
+
+
+(defun load-names ()
+  (with-open-file (f "f:\\crossref\\all-conference-papers.tsv")
+    (loop
+       with hist = (make-hash-table :test #'equal)
+       for line = (read-line f nil nil)
+       for seq from 0
+       for line-items = (split-sequence:split-sequence #\Tab line)
+       while line
+       do
+         (if (<= 9 (length line-items))
+             (incf (gethash (elt line-items 8) hist 0))
+             (print line-items))
+         (when (< 10000 seq)
+           (loop-finish))
+       finally
+         (loop for publisher being the hash-keys of hist
+              do (print (list publisher (gethash publisher hist)))))))
+
 
 ;;;
 ;;; Parsing response
@@ -179,3 +311,25 @@ sort-by in {'relevance', 'year'}
                              :external-format-in :utf-8)
       (when (= status 200)
         (flexi-streams:octets-to-string content :external-format :utf-8)))))
+
+
+
+(defun get-conferences (year month)
+  (let ((accept "application/json")
+        (cursor "*")
+        (filter "from-update-date:2018-12-01,until-update-date:2018-12-01,type:proceedings-article"))
+    (multiple-value-bind (content status)
+        (drakma:http-request (format nil "~A/works/"
+                                     *crossref-api-host*)
+                             :parameters (list
+                                          (cons "filter" filter)
+                                          (cons "mailto" "serg@msu.ru")
+                                          (cons "cursor" cursor))
+                             :accept accept
+                             :external-format-in :utf-8)
+      (when (= status 200)
+        (let* ((data (flexi-streams:octets-to-string content :external-format :utf-8))
+               (js-doc (json:decode-json-from-string data)))
+          (let ((total-results (jsonpath:match js-doc "$.message.total-results"))
+                (next-cursor (jsonpath:match js-doc "$.message.next-cursor")))
+            next-cursor))))))
